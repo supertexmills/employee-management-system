@@ -1,3 +1,4 @@
+import { AppProviders } from "@/providers/app-providers";
 import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
@@ -39,7 +40,7 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        {children}
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

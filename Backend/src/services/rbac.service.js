@@ -3,6 +3,7 @@ import { ROLES } from "../constant/roles.js";
 import {
   canPerformAction,
   canManageEmployeeRecord,
+  canManageAttendance,
   getManagedRoles,
 } from "../constant/permissions.js";
 
@@ -35,6 +36,12 @@ export function assertCanReadUser(actor, targetUser) {
 
 export function assertCanManageEmployee(actor, action) {
   if (!canManageEmployeeRecord(actor.role, action)) {
+    throw new AppError("Forbidden: insufficient permissions", 403);
+  }
+}
+
+export function assertCanReadAttendance(actor) {
+  if (!canManageAttendance(actor.role, "read")) {
     throw new AppError("Forbidden: insufficient permissions", 403);
   }
 }

@@ -1,4 +1,5 @@
 import Admin from "../models/admin/admin.model.js";
+import { deleteAvatarFile } from "./media/avatar.service.js";
 import { AppError } from "../utils/AppError.js";
 import {
   assertCanModifyUser,
@@ -23,6 +24,14 @@ export async function listAdmins(actor, query) {
   }
   if (query.status) {
     filter.status = query.status;
+  }
+  if (query.search) {
+    const term = query.search.trim();
+    if (term) {
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const pattern = new RegExp(escaped, "i");
+      filter.$or = [{ username: pattern }, { email: pattern }];
+    }
   }
 
   const page = query.page ?? 1;
@@ -89,10 +98,14 @@ export async function deleteAdmin(actor, id) {
 
   assertCanModifyUser(actor, user, "delete");
 
+  const previousAvatarId = user.profilePictureId;
   user.status = "inactive";
   user.refreshToken = null;
   user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+  user.profilePictureId = null;
+  user.profilePicture = null;
   await user.save();
+  await deleteAvatarFile(previousAvatarId);
 
   return { message: "User deactivated successfully" };
 }

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/cn";
+import Link from "next/link";
 import { type ButtonHTMLAttributes, forwardRef } from "react";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "outline";
@@ -24,21 +25,28 @@ const sizeStyles: Record<ButtonSize, string> = {
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  href?: string;
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", ...props }, ref) => {
+  ({ className, variant = "primary", size = "md", href, ...props }, ref) => {
+    const classes = cn(
+      "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+      variantStyles[variant],
+      sizeStyles[size],
+      className,
+    );
+
+    if (href) {
+      return (
+        <Link href={href} className={classes}>
+          {props.children}
+        </Link>
+      );
+    }
+
     return (
-      <button
-        ref={ref}
-        className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-          variantStyles[variant],
-          sizeStyles[size],
-          className,
-        )}
-        {...props}
-      />
+      <button ref={ref} className={classes} {...props} />
     );
   },
 );

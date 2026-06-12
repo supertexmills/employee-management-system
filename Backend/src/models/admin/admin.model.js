@@ -17,6 +17,10 @@ const adminSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    profilePictureId: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+    },
     email: {
       type: String,
       required: true,
@@ -87,6 +91,7 @@ adminSchema.methods.toSafeObject = function () {
     status: this.status,
     isActive: this.isActive,
     profilePicture: this.profilePicture,
+    profilePictureId: this.profilePictureId,
     lastLoginAt: this.lastLoginAt,
     createdBy: this.createdBy,
     createdAt: this.createdAt,

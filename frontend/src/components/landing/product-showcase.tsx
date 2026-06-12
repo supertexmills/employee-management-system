@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardPreview } from "@/components/dashboard/dashboard-preview";
+import { ShowcaseMock } from "@/components/landing/showcase-mock";
 import { FadeIn } from "@/components/motion/fade-in";
 import { Container } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/section-heading";
@@ -84,7 +84,7 @@ export function ProductShowcase() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               >
-                <DashboardPreview
+                <ShowcaseMock
                   variant={variantMap[activeTab]}
                   className="shadow-2xl shadow-slate-900/10"
                 />

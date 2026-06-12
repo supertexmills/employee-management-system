@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardPreview } from "@/components/dashboard/dashboard-preview";
+import { ShowcaseMock } from "@/components/landing/showcase-mock";
 import { FadeIn } from "@/components/motion/fade-in";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,7 @@ export function Hero() {
         <FadeIn delay={0.5} className="relative mx-auto mt-16 max-w-5xl">
           <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 blur-2xl" />
           <GlassCard className="relative overflow-hidden p-2 sm:p-3">
-            <DashboardPreview variant="hero" />
+            <ShowcaseMock variant="hero" />
           </GlassCard>
           <motion.div
             className="absolute -right-4 -bottom-4 hidden rounded-xl border border-border bg-white p-3 shadow-lg lg:block"

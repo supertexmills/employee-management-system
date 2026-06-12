@@ -52,10 +52,12 @@ export function Header() {
           </nav>
 
           <div className="hidden items-center gap-3 md:flex">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" href="/login">
               Sign In
             </Button>
-            <Button size="sm">Start Free Trial</Button>
+            <Button size="sm" href="/login">
+              Start Free Trial
+            </Button>
           </div>
 
           <button
@@ -90,10 +92,12 @@ export function Header() {
                 </a>
               ))}
               <div className="flex flex-col gap-2 pt-2">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" href="/login">
                   Sign In
                 </Button>
-                <Button size="sm">Start Free Trial</Button>
+                <Button size="sm" href="/login">
+                  Start Free Trial
+                </Button>
               </div>
             </Container>
           </motion.div>

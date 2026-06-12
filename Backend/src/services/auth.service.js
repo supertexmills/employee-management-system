@@ -43,7 +43,11 @@ export async function refresh(refreshToken) {
 
   const valid = await comparePassword(refreshToken, user.refreshToken);
   if (!valid) {
-    throw new AppError("Invalid refresh token", 401);
+    // Valid JWT + matching token version but wrong hash = rotated/reused refresh token
+    user.refreshToken = null;
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+    await user.save();
+    throw new AppError("Token revoked", 401);
   }
 
   const tokens = issueTokenPair(user);
@@ -91,4 +95,54 @@ export async function getMe(userId) {
     throw new AppError("User not found", 404);
   }
   return user.toSafeObject();
+}
+
+export async function updateProfile(userId, updates) {
+  const user = await Admin.findById(userId);
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  if (updates.username !== undefined || updates.email !== undefined) {
+    const conflictQuery = [];
+    if (updates.username !== undefined && updates.username !== user.username) {
+      conflictQuery.push({ username: updates.username });
+    }
+    if (updates.email !== undefined && updates.email !== user.email) {
+      conflictQuery.push({ email: updates.email });
+    }
+
+    if (conflictQuery.length > 0) {
+      const exists = await Admin.findOne({
+        _id: { $ne: userId },
+        $or: conflictQuery,
+      });
+      if (exists) {
+        throw new AppError("Email or username already exists", 409);
+      }
+    }
+  }
+
+  if (updates.username !== undefined) user.username = updates.username;
+  if (updates.email !== undefined) user.email = updates.email;
+
+  await user.save();
+  return user.toSafeObject();
+}
+
+export async function changePassword(userId, currentPassword, newPassword) {
+  const user = await Admin.findById(userId).select("+password +refreshToken");
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  const valid = await user.comparePassword(currentPassword);
+  if (!valid) {
+    throw new AppError("Current password is incorrect", 400);
+  }
+
+  user.password = newPassword;
+  user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+  user.refreshToken = null;
+  await user.save();
 }
