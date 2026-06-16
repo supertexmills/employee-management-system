@@ -1,5 +1,21 @@
 import { z } from "zod";
 
+const departments = [
+  "Production",
+  "Quality",
+  "Maintenance",
+  "HR",
+  "Accounts",
+  "Store",
+];
+
+const shifts = ["morning", "evening", "night"];
+
+export const rfidStreamQuerySchema = z.object({
+  department: z.enum(departments).optional(),
+  shift: z.enum(shifts).optional(),
+});
+
 export const listRfidEventsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),

@@ -6,6 +6,7 @@ import { validate } from "../middleware/validate.middleware.js";
 import {
   listRfidEventsQuerySchema,
   listUnknownTagsQuerySchema,
+  rfidStreamQuerySchema,
 } from "../validators/rfid.validator.js";
 
 const router = Router();
@@ -15,6 +16,7 @@ router.use(authenticate);
 router.get(
   "/events/stream",
   authorizeAttendanceAction("read"),
+  validate(rfidStreamQuerySchema, "query"),
   rfidController.streamEvents
 );
 

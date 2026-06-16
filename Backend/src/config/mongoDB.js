@@ -1,5 +1,11 @@
+import dns from "node:dns";
 import mongoose from "mongoose";
 import { env } from "./env.js";
+
+// Windows/ISP DNS often refuses SRV lookups required by mongodb+srv:// URIs.
+if (env.mongodbUri.startsWith("mongodb+srv://")) {
+  dns.setServers(["8.8.8.8", "8.8.4.4", "1.1.1.1"]);
+}
 
 export async function connectDB() {
   try {

@@ -87,7 +87,7 @@ export function MonitorKpiGrid({ summary }: MonitorKpiGridProps) {
                 isHero ? "text-white" : "text-slate-900",
               )}
             >
-              <AnimatedCounter value={item.value} duration={1} />
+              <AnimatedCounter value={item.value} duration={0.3} />
             </p>
             <p
               className={cn(

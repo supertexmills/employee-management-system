@@ -2,8 +2,10 @@ import EmployeePresence from "../../models/attendance/employeePresence.model.js"
 import AttendanceDay from "../../models/attendance/attendanceDay.model.js";
 import ShiftSchedule from "../../models/rfid/shiftSchedule.model.js";
 import { getFactoryDate, isLateEntry } from "../../utils/factoryDate.js";
-import { publishAttendanceSummary } from "../rfid/eventBus.js";
-import { getLiveSummary } from "./liveCount.service.js";
+import {
+  publishAttendanceChanged,
+  publishAttendanceRow,
+} from "../rfid/eventBus.js";
 
 const shiftCache = new Map();
 
@@ -79,8 +81,18 @@ export async function processEvent(event, employee) {
     { upsert: true }
   );
 
-  const summary = await getLiveSummary();
-  publishAttendanceSummary(summary);
+  const row = await AttendanceDay.findOne({
+    employee: employee._id,
+    date: today,
+  })
+    .populate(
+      "employee",
+      "employeeId employeeName department shift rfid profilePicture"
+    )
+    .lean();
+
+  publishAttendanceChanged();
+  if (row) publishAttendanceRow(row);
 }
 
 export function clearShiftCache() {

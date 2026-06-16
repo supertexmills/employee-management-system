@@ -29,6 +29,11 @@ export default function OverviewPage() {
   const router = useRouter();
   const [department, setDepartment] = useState<Department | "">("");
   const [shift, setShift] = useState<Shift | "">("");
+  const [todayLabel, setTodayLabel] = useState("");
+
+  useEffect(() => {
+    setTodayLabel(formatTodayLabel());
+  }, []);
 
   useEffect(() => {
     if (!canReadAttendance()) {
@@ -44,25 +49,40 @@ export default function OverviewPage() {
     [department, shift],
   );
 
+  const streamEnabled = canReadAttendance();
+
+  const {
+    summary: streamSummary,
+    recentEvents,
+    snapshotRows,
+    readerStatus,
+    connected,
+    reconnecting,
+  } = useRfidStream({
+    enabled: streamEnabled,
+    filters,
+    hydrateSnapshot: true,
+    snapshotLimit: 8,
+  });
+
   const summaryQuery = useQuery({
     queryKey: ["overview", "attendance-summary", filters],
     queryFn: () => attendanceApi.todaySummary(filters),
-    enabled: canReadAttendance(),
-    refetchInterval: 30_000,
+    enabled: streamEnabled && !connected,
+    refetchInterval: connected ? false : 30_000,
   });
 
   const snapshotQuery = useQuery({
     queryKey: ["overview", "attendance-snapshot", filters],
     queryFn: () => attendanceApi.liveFloor({ ...filters, page: 1, limit: 8 }),
-    enabled: canReadAttendance(),
-    refetchInterval: 30_000,
+    enabled: streamEnabled && !connected,
+    refetchInterval: connected ? false : 30_000,
   });
 
-  const { summary: streamSummary, recentEvents, connected } = useRfidStream(
-    canReadAttendance(),
-  );
-
   const summary = streamSummary ?? summaryQuery.data;
+  const attendanceRows = connected
+    ? snapshotRows
+    : (snapshotQuery.data?.data ?? []);
 
   if (!canReadAttendance()) {
     return null;
@@ -72,9 +92,19 @@ export default function OverviewPage() {
     <div className="space-y-6">
       <PageHeader
         title="Floor Monitor"
-        description={`Today's workforce · ${formatTodayLabel()}`}
+        description={
+          todayLabel
+            ? `Today's workforce · ${todayLabel}`
+            : "Today's workforce"
+        }
         breadcrumbs={[{ label: "Dashboard" }]}
-        action={<LiveIndicator connected={connected} />}
+        action={
+          <LiveIndicator
+            connected={connected}
+            reconnecting={reconnecting}
+            readerConnected={readerStatus?.connected}
+          />
+        }
       />
 
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -107,8 +137,8 @@ export default function OverviewPage() {
       <div className="grid gap-6 xl:grid-cols-2">
         <LiveActivityFeed events={recentEvents.slice(0, 8)} />
         <AttendanceSnapshot
-          rows={snapshotQuery.data?.data ?? []}
-          isLoading={snapshotQuery.isLoading}
+          rows={attendanceRows}
+          isLoading={!connected && snapshotQuery.isLoading}
         />
       </div>
     </div>

@@ -7,9 +7,8 @@ import { MonitorFilters } from "@/components/monitor/monitor-filters";
 import { useRfidStream } from "@/hooks/useRfidStream";
 import type { Department, Shift } from "@/lib/constants/departments";
 import { useAuth } from "@/providers/auth-provider";
-import { getRfidEventEmployee } from "@/types/attendance";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function LiveFloorPage() {
   const router = useRouter();
@@ -23,19 +22,22 @@ export default function LiveFloorPage() {
     }
   }, [canReadAttendance, router]);
 
-  const { recentEvents, connected } = useRfidStream(canReadAttendance());
+  const filters = useMemo(
+    () => ({
+      ...(department ? { department } : {}),
+      ...(shift ? { shift } : {}),
+    }),
+    [department, shift],
+  );
+
+  const { recentEvents, readerStatus, connected, reconnecting } = useRfidStream({
+    enabled: canReadAttendance(),
+    filters,
+  });
 
   if (!canReadAttendance()) {
     return null;
   }
-
-  const filteredEvents = recentEvents.filter((event) => {
-    const details = getRfidEventEmployee(event);
-    if (!details) return true;
-    if (department && details.department !== department) return false;
-    if (shift && details.shift !== shift) return false;
-    return true;
-  });
 
   return (
     <div className="space-y-6">
@@ -46,7 +48,13 @@ export default function LiveFloorPage() {
           { label: "Floor Monitor", href: "/overview" },
           { label: "Live Gate" },
         ]}
-        action={<LiveIndicator connected={connected} />}
+        action={
+          <LiveIndicator
+            connected={connected}
+            reconnecting={reconnecting}
+            readerConnected={readerStatus?.connected}
+          />
+        }
       />
 
       <MonitorFilters
@@ -58,7 +66,7 @@ export default function LiveFloorPage() {
       />
 
       <LiveActivityFeed
-        events={filteredEvents}
+        events={recentEvents}
         title="Gate activity stream"
         description="Every tag read at the main gate, updated in real time."
       />

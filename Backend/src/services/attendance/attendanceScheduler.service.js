@@ -5,8 +5,7 @@ import AttendanceDay from "../../models/attendance/attendanceDay.model.js";
 import ShiftSchedule from "../../models/rfid/shiftSchedule.model.js";
 import { env } from "../../config/env.js";
 import { getFactoryDate, getShiftBounds } from "../../utils/factoryDate.js";
-import { publishAttendanceSummary } from "../rfid/eventBus.js";
-import { getLiveSummary } from "./liveCount.service.js";
+import { publishAttendanceChanged } from "../rfid/eventBus.js";
 
 let cronTasks = [];
 
@@ -66,7 +65,7 @@ async function runAbsentCheck() {
     );
   }
 
-  publishAttendanceSummary(await getLiveSummary());
+  publishAttendanceChanged();
 }
 
 async function runOvertimeCheck() {
@@ -107,7 +106,7 @@ async function runOvertimeCheck() {
     );
   }
 
-  publishAttendanceSummary(await getLiveSummary());
+  publishAttendanceChanged();
 }
 
 async function runMissingTagCheck() {
@@ -143,6 +142,6 @@ async function runMissingTagCheck() {
   }
 
   if (staleInside.length > 0) {
-    publishAttendanceSummary(await getLiveSummary());
+    publishAttendanceChanged();
   }
 }
