@@ -30,6 +30,7 @@ export const env = {
   jwtAccessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
   isProduction: nodeEnv === "production",
+  isTest: nodeEnv === "test",
   rfidEnabled: process.env.RFID_ENABLED === "true",
   rfidReaderIp: process.env.RFID_READER_IP || "192.168.1.200",
   rfidReaderPort: Number(process.env.RFID_READER_PORT) || 200,

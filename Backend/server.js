@@ -1,57 +1,17 @@
-import express from "express";
-import helmet from "helmet";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import { connectDB } from "./src/config/mongoDB.js";
 import { env } from "./src/config/env.js";
-import routes from "./src/routes/index.js";
-import { errorHandler } from "./src/middleware/errorHandler.js";
-import { seedShiftSchedulesIfEmpty } from "./scripts/seedShiftSchedules.js";
-import { seedProductionIfEmpty } from "./scripts/seedProduction.js";
-import { hydrateRfidCaches } from "./src/services/rfid/rfidEvent.service.js";
-import { hydrateProductionCaches } from "./src/services/production/roundCounter.service.js";
-import { startRfidReader, stopRfidReader } from "./src/services/rfid/rfidReader.service.js";
+import { createApp } from "./src/app.js";
+import { bootstrap } from "./src/bootstrap.js";
+import { stopRfidReader } from "./src/services/rfid/rfidReader.service.js";
 import {
-  startAttendanceScheduler,
   stopAttendanceScheduler,
 } from "./src/services/attendance/attendanceScheduler.service.js";
 
-const app = express();
-
-app.use(helmet());
-app.use(
-  cors({
-    origin: env.clientUrl,
-    credentials: true,
-  })
-);
-app.use(express.json({ limit: "10kb" }));
-app.use(cookieParser());
-
-app.use("/api", routes);
-
-app.use((_req, res) => {
-  res.status(404).json({ success: false, message: "Route not found" });
-});
-
-app.use(errorHandler);
+const app = createApp();
 
 let httpServer = null;
 
 async function start() {
-  await connectDB();
-  await seedShiftSchedulesIfEmpty();
-  await seedProductionIfEmpty();
-  await hydrateRfidCaches();
-  await hydrateProductionCaches();
-
-  if (env.rfidEnabled) {
-    startRfidReader();
-  } else {
-    console.log("RFID reader disabled (RFID_ENABLED=false)");
-  }
-
-  startAttendanceScheduler();
+  await bootstrap();
 
   httpServer = app.listen(env.port, () => {
     console.log(`Server running on http://127.0.0.1:${env.port} [${env.nodeEnv}]`);

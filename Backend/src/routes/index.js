@@ -15,13 +15,17 @@ import mediaRoutes from "./media.routes.js";
 
 const router = Router();
 
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { success: false, message: "Too many requests, try again later" },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+const noop = (_req, _res, next) => next();
+
+const apiLimiter = env.isTest
+  ? noop
+  : rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 100,
+      message: { success: false, message: "Too many requests, try again later" },
+      standardHeaders: true,
+      legacyHeaders: false,
+    });
 
 router.get("/health", async (_req, res) => {
   const dbState = mongoose.connection.readyState;

@@ -4,7 +4,11 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node ./node_modules/vitest/vitest.mjs run",
+    "test:watch": "node ./node_modules/vitest/vitest.mjs",
+    "test:unit": "node ./node_modules/vitest/vitest.mjs run tests/unit",
+    "test:integration": "node ./node_modules/vitest/vitest.mjs run tests/integration",
+    "test:coverage": "node ./node_modules/vitest/vitest.mjs run --coverage",
     "dev": "nodemon server.js",
     "start": "node server.js",
     "seed:superadmin": "node scripts/seedSuperAdmin.js",
