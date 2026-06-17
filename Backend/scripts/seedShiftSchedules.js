@@ -6,9 +6,9 @@ import { env } from "../src/config/env.js";
 dotenv.config();
 
 const DEFAULT_SHIFTS = [
-  { shift: "morning", startTime: "06:00", endTime: "14:00", graceMinutes: 15, overtimeAfterMinutes: 30 },
-  { shift: "evening", startTime: "14:00", endTime: "22:00", graceMinutes: 15, overtimeAfterMinutes: 30 },
-  { shift: "night", startTime: "22:00", endTime: "06:00", graceMinutes: 15, overtimeAfterMinutes: 30 },
+  { shift: "morning", startTime: "06:00", endTime: "14:00" },
+  { shift: "evening", startTime: "14:00", endTime: "22:00" },
+  { shift: "night", startTime: "22:00", endTime: "06:00" },
 ];
 
 export async function seedShiftSchedulesIfEmpty() {

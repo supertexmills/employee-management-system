@@ -3,6 +3,7 @@ import RfidEvent from "../../models/rfid/rfidEvent.model.js";
 import EmployeePresence from "../../models/attendance/employeePresence.model.js";
 import { env } from "../../config/env.js";
 import { processEvent } from "../attendance/attendanceEngine.service.js";
+import { processRead } from "../production/roundCounter.service.js";
 import { publishRfidEvent } from "./eventBus.js";
 import { assertCanReadAttendance } from "../rbac.service.js";
 
@@ -75,6 +76,11 @@ function buildIdempotencyKey(epc, readerId, detectedAt) {
 }
 
 async function saveEvent(epc, rawHex, readerId, location) {
+  if (env.productionModeOnly) {
+    await processRead({ epc, readerId, rawHex, source: "TCP" });
+    return;
+  }
+
   if (isDuplicate(epc)) {
     console.log(`Duplicate ignored: ${epc}`);
     return;
@@ -230,4 +236,8 @@ export function refreshEmployeeInCache(employee) {
   if (employee?.rfid) {
     employeeByEpc.set(employee.rfid.toUpperCase(), employee);
   }
+}
+
+export function getEmployeeByEpc(epc) {
+  return employeeByEpc.get(epc.toUpperCase());
 }

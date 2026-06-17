@@ -1,15 +1,8 @@
 import { z } from "zod";
+import { DEPARTMENTS, SHIFTS } from "../constant/factory.js";
 
-const departments = [
-  "Production",
-  "Quality",
-  "Maintenance",
-  "HR",
-  "Accounts",
-  "Store",
-];
-
-const shifts = ["morning", "evening", "night"];
+const departments = DEPARTMENTS;
+const shifts = SHIFTS;
 
 export const rfidStreamQuerySchema = z.object({
   department: z.enum(departments).optional(),

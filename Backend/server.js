@@ -7,7 +7,9 @@ import { env } from "./src/config/env.js";
 import routes from "./src/routes/index.js";
 import { errorHandler } from "./src/middleware/errorHandler.js";
 import { seedShiftSchedulesIfEmpty } from "./scripts/seedShiftSchedules.js";
+import { seedProductionIfEmpty } from "./scripts/seedProduction.js";
 import { hydrateRfidCaches } from "./src/services/rfid/rfidEvent.service.js";
+import { hydrateProductionCaches } from "./src/services/production/roundCounter.service.js";
 import { startRfidReader, stopRfidReader } from "./src/services/rfid/rfidReader.service.js";
 import {
   startAttendanceScheduler,
@@ -39,7 +41,9 @@ let httpServer = null;
 async function start() {
   await connectDB();
   await seedShiftSchedulesIfEmpty();
+  await seedProductionIfEmpty();
   await hydrateRfidCaches();
+  await hydrateProductionCaches();
 
   if (env.rfidEnabled) {
     startRfidReader();

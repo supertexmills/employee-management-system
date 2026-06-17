@@ -40,4 +40,7 @@ export const env = {
   rfidAntiPassbackMs: Number(process.env.RFID_ANTI_PASSBACK_MS) || 30000,
   factoryTimezone: process.env.FACTORY_TIMEZONE || "Asia/Kolkata",
   missingTagThresholdMinutes: Number(process.env.MISSING_TAG_THRESHOLD_MINUTES) || 90,
+  productionModeOnly: process.env.PRODUCTION_MODE_ONLY === "true",
+  defaultMinRoundIntervalSeconds: Number(process.env.DEFAULT_MIN_ROUND_INTERVAL_SECONDS) || 30,
+  countOutsideShift: process.env.COUNT_OUTSIDE_SHIFT === "true",
 };

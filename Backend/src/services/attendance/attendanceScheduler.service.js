@@ -45,8 +45,8 @@ async function runAbsentCheck() {
     const schedule = scheduleByShift[emp.shift];
     if (!schedule) continue;
 
-    const { graceEndAt } = getShiftBounds(schedule, now);
-    if (now < graceEndAt) continue;
+    const { startAt } = getShiftBounds(schedule, now);
+    if (now < startAt) continue;
 
     const day = await AttendanceDay.findOne({ employee: emp._id, date: today });
     if (day?.firstEntryAt) continue;
@@ -88,8 +88,8 @@ async function runOvertimeCheck() {
     const schedule = scheduleByShift[emp.shift];
     if (!schedule) continue;
 
-    const { overtimeAt } = getShiftBounds(schedule, now);
-    if (now < overtimeAt) continue;
+    const { endAt } = getShiftBounds(schedule, now);
+    if (now < endAt) continue;
 
     await AttendanceDay.findOneAndUpdate(
       { employee: emp._id, date: today },

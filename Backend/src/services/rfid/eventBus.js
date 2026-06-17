@@ -19,3 +19,11 @@ export function publishAttendanceSummary(_payload) {
 export function publishAttendanceRow(row) {
   eventBus.emit("attendance:row", row);
 }
+
+export function publishRoundEvent(payload) {
+  eventBus.emit("production:round", payload);
+}
+
+export function publishProductionChanged() {
+  eventBus.emit("production:changed");
+}
