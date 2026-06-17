@@ -13,6 +13,7 @@ export function getRoleHome(role: Role) {
 }
 
 export const PROTECTED_PREFIXES = [
+  "/production",
   "/overview",
   "/live-floor",
   "/attendance",

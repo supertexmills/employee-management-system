@@ -23,6 +23,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/login",
+    "/production/:path*",
     "/overview/:path*",
     "/live-floor/:path*",
     "/attendance/:path*",

@@ -2,11 +2,14 @@ import type { Role } from "@/lib/constants/roles";
 import {
   canManageEmployee,
   canReadAttendance,
+  canReadProduction,
   canReadUsers,
 } from "@/lib/auth/permissions";
 import {
   Activity,
   ClipboardList,
+  Cog,
+  Factory,
   LayoutDashboard,
   Settings,
   Shield,
@@ -22,6 +25,24 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
+  {
+    label: "Production Command",
+    href: "/production",
+    icon: Factory,
+    visible: canReadProduction,
+  },
+  {
+    label: "Live Rounds",
+    href: "/production/live",
+    icon: Activity,
+    visible: canReadProduction,
+  },
+  {
+    label: "Machines",
+    href: "/production/machines",
+    icon: Cog,
+    visible: canReadProduction,
+  },
   {
     label: "Floor Monitor",
     href: "/overview",

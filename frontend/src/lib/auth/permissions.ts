@@ -80,3 +80,19 @@ const ATTENDANCE_ACTIONS: Record<Role, string[]> = {
 export function canReadAttendance(actorRole: Role) {
   return ATTENDANCE_ACTIONS[actorRole]?.includes("read") ?? false;
 }
+
+const PRODUCTION_ACTIONS: Record<Role, string[]> = {
+  [ROLES.SUPER_ADMIN]: ["read", "manage"],
+  [ROLES.ADMIN]: ["read", "manage"],
+  [ROLES.MANAGER]: ["read"],
+  [ROLES.HR]: ["read", "manage"],
+  [ROLES.EMPLOYEE]: [],
+};
+
+export function canReadProduction(actorRole: Role) {
+  return PRODUCTION_ACTIONS[actorRole]?.includes("read") ?? false;
+}
+
+export function canManageProduction(actorRole: Role) {
+  return PRODUCTION_ACTIONS[actorRole]?.includes("manage") ?? false;
+}

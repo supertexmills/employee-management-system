@@ -5,6 +5,8 @@ import {
   canPerformUserAction,
   canReadAttendance,
   canReadOverview,
+  canReadProduction,
+  canManageProduction,
   canReadUsers,
   getCreatableRoles,
 } from "@/lib/auth/permissions";
@@ -36,6 +38,8 @@ type AuthContextValue = {
   canReadUsers: () => boolean;
   canReadOverview: () => boolean;
   canReadAttendance: () => boolean;
+  canReadProduction: () => boolean;
+  canManageProduction: () => boolean;
   canManageEmployee: (action: string) => boolean;
   canUserAction: (targetRole: Role, action: string) => boolean;
   creatableRoles: RegisterableRole[];
@@ -71,6 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       canReadUsers: () => (role ? canReadUsers(role) : false),
       canReadOverview: () => (role ? canReadOverview(role) : false),
       canReadAttendance: () => (role ? canReadAttendance(role) : false),
+      canReadProduction: () => (role ? canReadProduction(role) : false),
+      canManageProduction: () => (role ? canManageProduction(role) : false),
       canManageEmployee: (action) =>
         role ? canManageEmployee(role, action) : false,
       canUserAction: (targetRole, action) =>
