@@ -1,137 +1,123 @@
-import type { Department, Shift } from "@/lib/constants/departments";
+import { apiRequest } from "./client";
 import type {
+  ApiResponse,
   Machine,
   MachineRound,
-  MachineSummaryResponse,
-  ProductionFilters,
-  ProductionLiveSnapshot,
-  ProductionReaderStatus,
-  ProductionRoundEvent,
-  ProductionTodaySummary,
-} from "@/types/production";
-import { apiListRequest, apiRequest } from "./client";
+  Pagination,
+  ProductionLive,
+  ProductionReader,
+  ProductionSummary,
+  ReaderStatus,
+} from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-export type ProductionStreamFilters = ProductionFilters;
-
-export type ProductionStreamHandlers = {
-  onLive?: (snapshot: ProductionLiveSnapshot) => void;
-  onRound?: (event: ProductionRoundEvent) => void;
-  onReaderStatus?: (status: ProductionReaderStatus) => void;
-  onOpen?: () => void;
-  onError?: () => void;
-};
-
-function buildQuery(params: Record<string, string | number | boolean | undefined>) {
-  const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== "") {
-      search.set(key, String(value));
-    }
-  }
-  const query = search.toString();
-  return query ? `?${query}` : "";
+export async function getProductionLive(params?: Record<string, string>) {
+  return apiRequest<ApiResponse<ProductionLive>>("/v1/production/live", { params });
 }
 
-export function connectProductionStream(
-  handlers: ProductionStreamHandlers,
-  filters: ProductionStreamFilters = {},
+export async function getProductionTodaySummary(params?: Record<string, string>) {
+  return apiRequest<ApiResponse<ProductionSummary>>("/v1/production/summary/today", {
+    params,
+  });
+}
+
+export async function getProductionShiftSummary(params?: Record<string, string>) {
+  return apiRequest<ApiResponse<ProductionSummary>>("/v1/production/summary/shift", {
+    params,
+  });
+}
+
+export async function listRounds(params?: Record<string, string | number>) {
+  return apiRequest<ApiResponse<MachineRound[]> & { pagination: Pagination }>(
+    "/v1/production/rounds",
+    { params }
+  );
+}
+
+export async function getRound(roundKey: string) {
+  return apiRequest<ApiResponse<MachineRound>>(
+    `/v1/production/rounds/${encodeURIComponent(roundKey)}`
+  );
+}
+
+export async function listMachines(params?: Record<string, string | number | boolean>) {
+  return apiRequest<ApiResponse<Machine[]> & { pagination: Pagination }>(
+    "/v1/production/machines",
+    { params }
+  );
+}
+
+export async function getMachine(machineId: string) {
+  return apiRequest<ApiResponse<Machine>>(`/v1/production/machines/${machineId}`);
+}
+
+export async function createMachine(data: Record<string, unknown>) {
+  return apiRequest<ApiResponse<Machine>>("/v1/production/machines", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateMachine(machineId: string, data: Record<string, unknown>) {
+  return apiRequest<ApiResponse<Machine>>(`/v1/production/machines/${machineId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteMachine(machineId: string) {
+  return apiRequest<ApiResponse<Machine>>(`/v1/production/machines/${machineId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function listReaders(params?: Record<string, string | number | boolean>) {
+  return apiRequest<ApiResponse<ProductionReader[]> & { pagination: Pagination }>(
+    "/v1/production/readers",
+    { params }
+  );
+}
+
+export async function getReadersStatus() {
+  return apiRequest<ApiResponse<ReaderStatus[]>>("/v1/production/readers/status");
+}
+
+export async function createReader(data: Record<string, unknown>) {
+  return apiRequest<ApiResponse<ProductionReader>>("/v1/production/readers", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateReader(readerId: string, data: Record<string, unknown>) {
+  return apiRequest<ApiResponse<ProductionReader>>(
+    `/v1/production/readers/${readerId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+export async function getEmployeeProductionSummary(id: string, params?: Record<string, string>) {
+  return apiRequest<ApiResponse<ProductionSummary>>(
+    `/v1/production/employees/${id}/summary`,
+    { params }
+  );
+}
+
+export async function getEmployeeRoundHistory(
+  id: string,
+  params?: Record<string, string | number>
 ) {
-  const query = buildQuery({
-    department: filters.department,
-    shift: filters.shift,
-    machineId: filters.machineId,
-  });
-
-  const es = new EventSource(`${API_URL}/api/v1/production/stream${query}`, {
-    withCredentials: true,
-  });
-
-  es.addEventListener("open", () => {
-    handlers.onOpen?.();
-  });
-
-  es.addEventListener("production:live", (e) => {
-    try {
-      handlers.onLive?.(JSON.parse(e.data) as ProductionLiveSnapshot);
-    } catch {
-      handlers.onError?.();
-    }
-  });
-
-  es.addEventListener("production:round", (e) => {
-    try {
-      handlers.onRound?.(JSON.parse(e.data) as ProductionRoundEvent);
-    } catch {
-      handlers.onError?.();
-    }
-  });
-
-  es.addEventListener("reader:status", (e) => {
-    try {
-      handlers.onReaderStatus?.(JSON.parse(e.data) as ProductionReaderStatus);
-    } catch {
-      handlers.onError?.();
-    }
-  });
-
-  es.onerror = () => {
-    handlers.onError?.();
-  };
-
-  return () => {
-    es.close();
-  };
+  return apiRequest<ApiResponse<MachineRound[]> & { pagination: Pagination }>(
+    `/v1/production/employees/${id}/history`,
+    { params }
+  );
 }
 
-export type ListRoundsParams = ProductionFilters & {
-  page?: number;
-  limit?: number;
-  from?: string;
-  to?: string;
-  epc?: string;
-  employeeId?: string;
-};
-
-export type ListMachinesParams = {
-  page?: number;
-  limit?: number;
-  department?: Department;
-  isActive?: boolean;
-};
-
-export const productionApi = {
-  live: (filters: ProductionFilters = {}) =>
-    apiRequest<ProductionLiveSnapshot>(
-      `/api/v1/production/live${buildQuery(filters as Record<string, string | undefined>)}`,
-    ),
-
-  todaySummary: (filters: ProductionFilters = {}) =>
-    apiRequest<ProductionTodaySummary>(
-      `/api/v1/production/summary/today${buildQuery(filters as Record<string, string | undefined>)}`,
-    ),
-
-  listRounds: (params: ListRoundsParams = {}) =>
-    apiListRequest<MachineRound>(
-      `/api/v1/production/rounds${buildQuery(params as Record<string, string | number | undefined>)}`,
-    ),
-
-  machineSummary: (machineId: string, filters: ProductionFilters = {}) =>
-    apiRequest<MachineSummaryResponse>(
-      `/api/v1/production/machines/${encodeURIComponent(machineId)}/summary${buildQuery(filters as Record<string, string | undefined>)}`,
-    ),
-
-  listMachines: (params: ListMachinesParams = {}) =>
-    apiListRequest<Machine>(
-      `/api/v1/production/machines${buildQuery(params)}`,
-    ),
-
-  getMachine: (machineId: string) =>
-    apiRequest<Machine>(
-      `/api/v1/production/machines/${encodeURIComponent(machineId)}`,
-    ),
-
-  readersStatus: () =>
-    apiRequest<ProductionReaderStatus[]>(`/api/v1/production/readers/status`),
-};
+export async function getMachineSummary(machineId: string, params?: Record<string, string>) {
+  return apiRequest<ApiResponse<ProductionSummary>>(
+    `/v1/production/machines/${machineId}/summary`,
+    { params }
+  );
+}

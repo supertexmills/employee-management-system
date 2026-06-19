@@ -1,67 +1,77 @@
-import type {
-  LoginResponse,
-  RefreshResponse,
-  RegisterPayload,
-  SessionUser,
-  UpdateProfilePayload,
-  UserProfile,
-} from "@/types/user";
-import { apiRequest, apiUpload } from "./client";
+import { apiRequest, getApiBaseUrl } from "./client";
+import { getCookie } from "@/lib/utils";
+import type { ApiResponse, ProfileUser, SessionUser } from "./types";
 
-export const authApi = {
-  login: (email: string, password: string) =>
-    apiRequest<LoginResponse>("/api/auth/login", {
+export async function login(email: string, password: string) {
+  return apiRequest<ApiResponse<{ user: SessionUser; expiresIn: number }>>(
+    "/auth/login",
+    {
       method: "POST",
       body: JSON.stringify({ email, password }),
-      skipAuth: true,
       skipRefresh: true,
-    }),
+    }
+  );
+}
 
-  refresh: () =>
-    apiRequest<RefreshResponse>("/api/auth/refresh", {
-      method: "POST",
-      skipAuth: true,
-      skipRefresh: true,
-    }),
+export async function logout() {
+  return apiRequest<ApiResponse<null>>("/auth/logout", { method: "POST" });
+}
 
-  me: () => apiRequest<UserProfile>("/api/auth/me"),
+export async function getMe() {
+  return apiRequest<ApiResponse<ProfileUser>>("/auth/me");
+}
 
-  logout: () =>
-    apiRequest<{ message: string }>("/api/auth/logout", {
-      method: "POST",
-    }),
+export async function updateProfile(data: { username?: string; email?: string }) {
+  return apiRequest<ApiResponse<ProfileUser>>("/auth/me", {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
 
-  register: (payload: RegisterPayload) =>
-    apiRequest<SessionUser>("/api/auth/register", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
+export async function changePassword(data: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}) {
+  return apiRequest<ApiResponse<null>>("/auth/me/password", {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
 
-  updateProfile: (payload: UpdateProfilePayload) =>
-    apiRequest<UserProfile>("/api/auth/me", {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    }),
+export async function uploadAvatar(file: File) {
+  const formData = new FormData();
+  formData.append("avatar", file);
+  const csrf = getCookie("csrfToken");
+  const response = await fetch(`${getApiBaseUrl()}/auth/me/avatar`, {
+    method: "POST",
+    credentials: "include",
+    headers: csrf ? { "X-CSRF-Token": csrf } : {},
+    body: formData,
+  });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.message ?? "Upload failed");
+  return payload as ApiResponse<ProfileUser>;
+}
 
-  changePassword: (payload: {
-    currentPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-  }) =>
-    apiRequest<{ message: string }>("/api/auth/me/password", {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-      skipRefresh: true,
-    }),
+export async function deleteAvatar() {
+  return apiRequest<ApiResponse<ProfileUser>>("/auth/me/avatar", {
+    method: "DELETE",
+  });
+}
 
-  uploadAvatar: (file: File) => {
-    const formData = new FormData();
-    formData.append("avatar", file);
-    return apiUpload<UserProfile>("/api/auth/me/avatar", formData);
-  },
+export async function registerAdmin(data: {
+  username: string;
+  email: string;
+  password: string;
+  role: string;
+}) {
+  return apiRequest<ApiResponse<SessionUser>>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
 
-  removeAvatar: () =>
-    apiRequest<UserProfile>("/api/auth/me/avatar", {
-      method: "DELETE",
-    }),
-};
+export function avatarUrl(userId: string) {
+  return `${getApiBaseUrl()}/media/avatars/${userId}`;
+}

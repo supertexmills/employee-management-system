@@ -9,7 +9,12 @@ import { errorHandler } from "./middleware/errorHandler.js";
 export function createApp() {
   const app = express();
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      // Keep SSE/streaming responses from being buffered or altered.
+      crossOriginResourcePolicy: false,
+    }),
+  );
   app.use(
     cors({
       origin: env.clientUrl,

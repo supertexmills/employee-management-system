@@ -1,42 +1,42 @@
-import type { AdminListItem, UpdateAdminPayload, UserStatus } from "@/types/user";
-import type { Role } from "@/lib/constants/roles";
-import { apiListRequest, apiRequest } from "./client";
+import { apiRequest } from "./client";
+import { normalizeAdmin, normalizeAdminListItem } from "./normalize";
+import type { Admin, AdminListItem, ApiResponse, Pagination } from "./types";
 
-export type ListAdminsParams = {
-  page?: number;
-  limit?: number;
-  search?: string;
-  role?: Exclude<Role, "super_admin">;
-  status?: UserStatus;
-};
-
-function buildQuery(params: Record<string, string | number | undefined>) {
-  const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== "") {
-      search.set(key, String(value));
-    }
-  }
-  const query = search.toString();
-  return query ? `?${query}` : "";
+export async function listAdmins(params?: Record<string, string | number>) {
+  const res = await apiRequest<
+    ApiResponse<AdminListItem[]> & { pagination: Pagination }
+  >("/admins", { params });
+  return {
+    ...res,
+    data: (res.data ?? []).map(normalizeAdminListItem),
+  };
 }
 
-export const adminsApi = {
-  list: (params: ListAdminsParams = {}) =>
-    apiListRequest<AdminListItem>(
-      `/api/admins${buildQuery(params as Record<string, string | number | undefined>)}`,
-    ),
+export async function getAdmin(id: string) {
+  const res = await apiRequest<ApiResponse<Admin>>(`/admins/${id}`);
+  if (res.data) {
+    return { ...res, data: normalizeAdmin(res.data) };
+  }
+  return res;
+}
 
-  getById: (id: string) => apiRequest<AdminListItem>(`/api/admins/${id}`),
+export async function updateAdmin(id: string, data: Record<string, unknown>) {
+  const res = await apiRequest<ApiResponse<Admin>>(`/admins/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+  if (res.data) {
+    return { ...res, data: normalizeAdmin(res.data) };
+  }
+  return res;
+}
 
-  update: (id: string, payload: UpdateAdminPayload) =>
-    apiRequest<AdminListItem>(`/api/admins/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    }),
-
-  remove: (id: string) =>
-    apiRequest<{ message: string }>(`/api/admins/${id}`, {
-      method: "DELETE",
-    }),
-};
+export async function deleteAdmin(id: string) {
+  const res = await apiRequest<ApiResponse<Admin>>(`/admins/${id}`, {
+    method: "DELETE",
+  });
+  if (res.data) {
+    return { ...res, data: normalizeAdmin(res.data) };
+  }
+  return res;
+}

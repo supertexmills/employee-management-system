@@ -81,8 +81,12 @@ async function saveEvent(epc, rawHex, readerId, location) {
     return;
   }
 
+  // Machine round counting uses its own debounce; run in parallel with attendance.
+  const roundTask = processRead({ epc, readerId, rawHex, source: "TCP" });
+
   if (isDuplicate(epc)) {
     console.log(`Duplicate ignored: ${epc}`);
+    await roundTask;
     return;
   }
 
@@ -101,6 +105,7 @@ async function saveEvent(epc, rawHex, readerId, location) {
   if (employee) {
     if (!canToggle(epc)) {
       console.log(`Anti-passback blocked: ${epc}`);
+      await roundTask;
       return;
     }
     action = getNextAction(epc);
@@ -125,6 +130,7 @@ async function saveEvent(epc, rawHex, readerId, location) {
   } catch (err) {
     if (err.code === 11000) {
       console.log(`Idempotent duplicate: ${epc}`);
+      await roundTask;
       return;
     }
     throw err;
@@ -149,6 +155,8 @@ async function saveEvent(epc, rawHex, readerId, location) {
   }
 
   publishRfidEvent(payload);
+
+  await roundTask;
 
   console.log("RFID EVENT SAVED:", {
     name: event.employeeName,
