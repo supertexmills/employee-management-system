@@ -1,29 +1,21 @@
-import { AppProviders } from "@/providers/app-providers";
 import type { Metadata } from "next";
-import { Geist_Mono, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryProvider } from "@/providers/query-provider";
+import { AuthProvider } from "@/providers/auth-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
 import "./globals.css";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "FactoryFlow — Factory Employee Management for Manufacturing",
-  description:
-    "Enterprise workforce management: attendance, shifts, payroll, compliance, and analytics for manufacturing teams.",
-  openGraph: {
-    title: "FactoryFlow — Factory Employee Management for Manufacturing",
-    description:
-      "Enterprise workforce management: attendance, shifts, payroll, compliance, and analytics for manufacturing teams.",
-    type: "website",
-  },
+  title: "Factory Flow | Operations Dashboard",
+  description: "Factory operations dashboard for attendance, RFID, and production tracking",
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({
@@ -32,16 +24,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
-      suppressHydrationWarning
-    >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <a href="#main-content" className="skip-link">
-          Skip to main content
-        </a>
-        <AppProviders>{children}</AppProviders>
+    <html lang="en" className="h-full" suppressHydrationWarning>
+      <body className={`${inter.variable} min-h-full font-sans antialiased`}>
+        <ThemeProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <TooltipProvider>
+                {children}
+                <Toaster richColors position="top-right" />
+              </TooltipProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,37 +1,29 @@
-import type { Department, Shift } from "@/lib/constants/departments";
-import type { AttendanceDayRow, AttendanceStatus, LiveSummary } from "@/types/attendance";
-import { apiListRequest, apiRequest } from "./client";
+import { apiRequest } from "./client";
+import type { ApiResponse, AttendanceDay, AttendanceSummary, Pagination } from "./types";
 
-export type LiveSummaryParams = {
-  department?: Department;
-  shift?: Shift;
-};
-
-export type LiveFloorParams = LiveSummaryParams & {
-  page?: number;
-  limit?: number;
-  status?: AttendanceStatus;
-};
-
-function buildQuery(params: Record<string, string | number | undefined>) {
-  const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== "") {
-      search.set(key, String(value));
-    }
-  }
-  const query = search.toString();
-  return query ? `?${query}` : "";
+export async function getTodaySummary(params?: Record<string, string>) {
+  return apiRequest<ApiResponse<AttendanceSummary>>("/attendance/summary/today", {
+    params,
+  });
 }
 
-export const attendanceApi = {
-  todaySummary: (params: LiveSummaryParams = {}) =>
-    apiRequest<LiveSummary>(
-      `/api/attendance/summary/today${buildQuery(params as Record<string, string | undefined>)}`,
-    ),
+export async function getLiveFloor(params?: Record<string, string | number>) {
+  return apiRequest<ApiResponse<AttendanceDay[]> & { pagination: Pagination }>(
+    "/attendance/live",
+    { params }
+  );
+}
 
-  liveFloor: (params: LiveFloorParams = {}) =>
-    apiListRequest<AttendanceDayRow>(
-      `/api/attendance/live${buildQuery(params as Record<string, string | number | undefined>)}`,
-    ),
-};
+export async function getEmployeeToday(id: string) {
+  return apiRequest<ApiResponse<AttendanceDay>>(`/attendance/employees/${id}/today`);
+}
+
+export async function getEmployeeHistory(
+  id: string,
+  params?: Record<string, string | number>
+) {
+  return apiRequest<ApiResponse<AttendanceDay[]> & { pagination: Pagination }>(
+    `/attendance/employees/${id}/history`,
+    { params }
+  );
+}

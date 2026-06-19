@@ -1,91 +1,86 @@
 "use client";
 
 import {
-  canManageEmployee,
-  canPerformUserAction,
-  canReadAttendance,
-  canReadOverview,
-  canReadUsers,
-  getCreatableRoles,
-} from "@/lib/auth/permissions";
-import { getRoleHome } from "@/lib/auth/routes";
-import {
-  sessionManager,
-  type SessionState,
-} from "@/lib/auth/session-manager";
-import type { RegisterableRole, Role } from "@/lib/constants/roles";
-import { useRouter } from "next/navigation";
-import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
-  type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import * as authApi from "@/lib/api/auth";
+import type { ProfileUser } from "@/lib/api/types";
+import { ApiError } from "@/lib/api/client";
 
-type AuthContextValue = {
-  user: SessionState["user"];
-  isLoading: boolean;
-  isAuthenticated: boolean;
+interface AuthContextValue {
+  user: ProfileUser | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
-  getRoleHome: () => string;
-  canCreateUser: () => boolean;
-  canReadUsers: () => boolean;
-  canReadOverview: () => boolean;
-  canReadAttendance: () => boolean;
-  canManageEmployee: (action: string) => boolean;
-  canUserAction: (targetRole: Role, action: string) => boolean;
-  creatableRoles: RegisterableRole[];
-};
+}
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<ProfileUser | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const [state, setState] = useState<SessionState>(sessionManager.getState());
+  const connectionErrorShown = useRef(false);
 
-  useEffect(() => {
-    sessionManager.setRedirect((path) => router.replace(path));
-    return sessionManager.subscribe(setState);
-  }, [router]);
-
-  useEffect(() => {
-    void sessionManager.bootstrap();
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await authApi.getMe();
+      setUser(res.data ?? null);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          setUser(null);
+        } else if (err.status === 0 && !connectionErrorShown.current) {
+          connectionErrorShown.current = true;
+          toast.error(
+            "Backend unavailable — check that the server is running on port 8080"
+          );
+        }
+      }
+    }
   }, []);
 
-  const value = useMemo<AuthContextValue>(() => {
-    const role = state.user?.role;
+  useEffect(() => {
+    void refreshUser().finally(() => setLoading(false));
+  }, [refreshUser]);
 
-    return {
-      user: state.user,
-      isLoading: state.isLoading,
-      isAuthenticated: Boolean(state.user),
-      login: (email, password) => sessionManager.login(email, password),
-      logout: () => sessionManager.logout(),
-      refreshUser: () => sessionManager.refreshUser(),
-      getRoleHome: () => (role ? getRoleHome(role) : "/login"),
-      canCreateUser: () => (role ? getCreatableRoles(role).length > 0 : false),
-      canReadUsers: () => (role ? canReadUsers(role) : false),
-      canReadOverview: () => (role ? canReadOverview(role) : false),
-      canReadAttendance: () => (role ? canReadAttendance(role) : false),
-      canManageEmployee: (action) =>
-        role ? canManageEmployee(role, action) : false,
-      canUserAction: (targetRole, action) =>
-        role ? canPerformUserAction(role, targetRole, action) : false,
-      creatableRoles: role ? getCreatableRoles(role) : [],
-    };
-  }, [state]);
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const res = await authApi.login(email, password);
+      setUser(res.data?.user as ProfileUser);
+      router.push("/dashboard");
+    },
+    [router]
+  );
+
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } finally {
+      setUser(null);
+      router.push("/login");
+    }
+  }, [router]);
+
+  const value = useMemo(
+    () => ({ user, loading, login, logout, refreshUser }),
+    [user, loading, login, logout, refreshUser]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
 }

@@ -1,11 +1,17 @@
 import type { NextConfig } from "next";
+import path from "path";
+
+const backendUrl = process.env.BACKEND_URL ?? "http://127.0.0.1:8080";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: path.join(__dirname),
+  },
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: `${process.env.API_PROXY_URL ?? "http://127.0.0.1:8080"}/api/:path*`,
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },

@@ -58,6 +58,18 @@ export function canManageAttendance(actorRole, action) {
   return ATTENDANCE_ACTIONS[actorRole]?.includes(action) ?? false;
 }
 
+export const PRODUCTION_ACTIONS = {
+  super_admin: ["read", "manage"],
+  admin: ["read", "manage"],
+  manager: ["read"],
+  hr: ["read", "manage"],
+  employee: [],
+};
+
+export function canManageProduction(actorRole, action) {
+  return PRODUCTION_ACTIONS[actorRole]?.includes(action) ?? false;
+}
+
 export function getManagedRoles(actorRole) {
   return ROLE_HIERARCHY[actorRole] ?? [];
 }

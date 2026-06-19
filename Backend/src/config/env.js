@@ -30,6 +30,7 @@ export const env = {
   jwtAccessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
   isProduction: nodeEnv === "production",
+  isTest: nodeEnv === "test",
   rfidEnabled: process.env.RFID_ENABLED === "true",
   rfidReaderIp: process.env.RFID_READER_IP || "192.168.1.200",
   rfidReaderPort: Number(process.env.RFID_READER_PORT) || 200,
@@ -40,4 +41,7 @@ export const env = {
   rfidAntiPassbackMs: Number(process.env.RFID_ANTI_PASSBACK_MS) || 30000,
   factoryTimezone: process.env.FACTORY_TIMEZONE || "Asia/Kolkata",
   missingTagThresholdMinutes: Number(process.env.MISSING_TAG_THRESHOLD_MINUTES) || 90,
+  productionModeOnly: process.env.PRODUCTION_MODE_ONLY === "true",
+  defaultMinRoundIntervalSeconds: Number(process.env.DEFAULT_MIN_ROUND_INTERVAL_SECONDS) || 30,
+  countOutsideShift: process.env.COUNT_OUTSIDE_SHIFT === "true",
 };

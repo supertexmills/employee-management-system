@@ -18,16 +18,6 @@ const shiftScheduleSchema = new mongoose.Schema(
       required: true,
       match: /^([01]\d|2[0-3]):[0-5]\d$/,
     },
-    graceMinutes: {
-      type: Number,
-      default: 15,
-      min: 0,
-    },
-    overtimeAfterMinutes: {
-      type: Number,
-      default: 30,
-      min: 0,
-    },
     timezone: {
       type: String,
       default: "Asia/Kolkata",

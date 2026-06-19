@@ -1,52 +1,33 @@
-import type { Department, Shift } from "@/lib/constants/departments";
-import type {
-  CreateEmployeePayload,
-  Employee,
-  UpdateEmployeePayload,
-} from "@/types/employee";
-import { apiListRequest, apiRequest } from "./client";
+import { apiRequest } from "./client";
+import type { ApiResponse, Employee, Pagination } from "./types";
 
-export type ListEmployeesParams = {
-  page?: number;
-  limit?: number;
-  department?: Department;
-  shift?: Shift;
-  isActive?: boolean;
-};
-
-function buildQuery(params: Record<string, string | number | boolean | undefined>) {
-  const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== "") {
-      search.set(key, String(value));
-    }
-  }
-  const query = search.toString();
-  return query ? `?${query}` : "";
+export async function listEmployees(params?: Record<string, string | number | boolean>) {
+  return apiRequest<ApiResponse<Employee[]> & { pagination: Pagination }>(
+    "/employees",
+    { params }
+  );
 }
 
-export const employeesApi = {
-  list: (params: ListEmployeesParams = {}) =>
-    apiListRequest<Employee>(
-      `/api/employees${buildQuery(params as Record<string, string | number | boolean | undefined>)}`,
-    ),
+export async function getEmployee(id: string) {
+  return apiRequest<ApiResponse<Employee>>(`/employees/${id}`);
+}
 
-  getById: (id: string) => apiRequest<Employee>(`/api/employees/${id}`),
+export async function createEmployee(data: Record<string, unknown>) {
+  return apiRequest<ApiResponse<Employee>>("/employees", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
 
-  create: (payload: CreateEmployeePayload) =>
-    apiRequest<Employee>("/api/employees", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
+export async function updateEmployee(id: string, data: Record<string, unknown>) {
+  return apiRequest<ApiResponse<Employee>>(`/employees/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
 
-  update: (id: string, payload: UpdateEmployeePayload) =>
-    apiRequest<Employee>(`/api/employees/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    }),
-
-  remove: (id: string) =>
-    apiRequest<{ message: string }>(`/api/employees/${id}`, {
-      method: "DELETE",
-    }),
-};
+export async function deleteEmployee(id: string) {
+  return apiRequest<ApiResponse<Employee>>(`/employees/${id}`, {
+    method: "DELETE",
+  });
+}

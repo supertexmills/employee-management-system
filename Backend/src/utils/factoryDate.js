@@ -46,18 +46,9 @@ export function getShiftBounds(shiftSchedule, date = new Date()) {
     endAt = buildDateInTimezone(nextDay, shiftSchedule.endTime);
   }
 
-  const graceEndAt = new Date(
-    startAt.getTime() + shiftSchedule.graceMinutes * 60 * 1000
-  );
-  const overtimeAt = new Date(
-    endAt.getTime() + shiftSchedule.overtimeAfterMinutes * 60 * 1000
-  );
-
   return {
     startAt,
     endAt,
-    graceEndAt,
-    overtimeAt,
     crossesMidnight,
     currentMinutes: getFactoryMinutes(date),
     startMinutes,
@@ -99,6 +90,6 @@ function addDaysToDateString(dateStr, days) {
 }
 
 export function isLateEntry(detectedAt, shiftSchedule) {
-  const { graceEndAt } = getShiftBounds(shiftSchedule, detectedAt);
-  return detectedAt > graceEndAt;
+  const { startAt } = getShiftBounds(shiftSchedule, detectedAt);
+  return detectedAt > startAt;
 }

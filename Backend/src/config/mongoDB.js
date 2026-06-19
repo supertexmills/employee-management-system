@@ -7,7 +7,7 @@ if (env.mongodbUri.startsWith("mongodb+srv://")) {
   dns.setServers(["8.8.8.8", "8.8.4.4", "1.1.1.1"]);
 }
 
-export async function connectDB() {
+export async function connectDB({ exitOnFailure = true } = {}) {
   try {
     await mongoose.connect(env.mongodbUri);
 
@@ -15,6 +15,9 @@ export async function connectDB() {
   } catch (error) {
     console.error("❌ MongoDB connection failed:", error);
 
-    process.exit(1); // Stop app if DB connection fails
+    if (exitOnFailure) {
+      process.exit(1);
+    }
+    throw error;
   }
 }

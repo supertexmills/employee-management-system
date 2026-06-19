@@ -4,7 +4,11 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node ./node_modules/vitest/vitest.mjs run",
+    "test:watch": "node ./node_modules/vitest/vitest.mjs",
+    "test:unit": "node ./node_modules/vitest/vitest.mjs run tests/unit",
+    "test:integration": "node ./node_modules/vitest/vitest.mjs run tests/integration",
+    "test:coverage": "node ./node_modules/vitest/vitest.mjs run --coverage",
     "dev": "nodemon server.js",
     "start": "node server.js",
     "seed:superadmin": "node scripts/seedSuperAdmin.js",
@@ -38,6 +42,11 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@faker-js/faker": "^10.4.0",
+    "@vitest/coverage-v8": "^4.1.9",
+    "mongodb-memory-server": "^11.2.0",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.9"
   }
 }
