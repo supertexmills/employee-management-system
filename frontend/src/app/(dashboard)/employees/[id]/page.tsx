@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
@@ -21,9 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import * as employeesApi from "@/lib/api/employees";
-import * as attendanceApi from "@/lib/api/attendance";
 import * as productionApi from "@/lib/api/production";
-import { formatMinutes } from "@/lib/utils";
 
 export default function EmployeeDetailPage({
   params,
@@ -32,24 +30,10 @@ export default function EmployeeDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const [historyPage, setHistoryPage] = useState(1);
 
   const { data: employeeRes, isLoading } = useQuery({
     queryKey: ["employee", id],
     queryFn: () => employeesApi.getEmployee(id),
-  });
-
-  const { data: todayAttendance } = useQuery({
-    queryKey: ["employee-attendance-today", id],
-    queryFn: () => attendanceApi.getEmployeeToday(id),
-    enabled: !!id,
-  });
-
-  const { data: history } = useQuery({
-    queryKey: ["employee-attendance-history", id, historyPage],
-    queryFn: () =>
-      attendanceApi.getEmployeeHistory(id, { page: historyPage, limit: 10 }),
-    enabled: !!id,
   });
 
   const { data: prodSummary } = useQuery({
@@ -65,8 +49,10 @@ export default function EmployeeDetailPage({
   });
 
   const employee = employeeRes?.data;
-  const today = todayAttendance?.data;
   const prod = prodSummary?.data;
+  const machines = prod?.machines ?? [];
+  const totalRounds = machines.reduce((sum, m) => sum + m.totalRounds, 0);
+  const roundsThisHour = machines.reduce((sum, m) => sum + m.roundsThisHour, 0);
 
   if (isLoading) {
     return (
@@ -115,10 +101,9 @@ export default function EmployeeDetailPage({
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="attendance">
+      <Tabs defaultValue="production">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="production">Production</TabsTrigger>
         </TabsList>
 
@@ -150,82 +135,50 @@ export default function EmployeeDetailPage({
           </Card>
         </TabsContent>
 
-        <TabsContent value="attendance" className="mt-4 space-y-4">
-          <KpiGrid>
-            <KpiCard
-              title="Today's Status"
-              value={today?.status ?? "—"}
-              highlighted
-            />
-            <KpiCard
-              title="First Entry"
-              value={
-                today?.firstEntryAt
-                  ? format(new Date(today.firstEntryAt), "HH:mm")
-                  : "—"
-              }
-            />
-            <KpiCard
-              title="Inside Time"
-              value={formatMinutes(today?.totalInsideMinutes)}
-            />
-            <KpiCard title="Late" value={today?.isLate ? "Yes" : "No"} />
-          </KpiGrid>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Attendance History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Entry</TableHead>
-                    <TableHead>Exit</TableHead>
-                    <TableHead>Inside</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(history?.data ?? []).map((row) => (
-                    <TableRow key={row._id}>
-                      <TableCell>{row.date}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={row.status} />
-                      </TableCell>
-                      <TableCell>
-                        {row.firstEntryAt
-                          ? format(new Date(row.firstEntryAt), "HH:mm")
-                          : "—"}
-                      </TableCell>
-                      <TableCell>
-                        {row.lastExitAt
-                          ? format(new Date(row.lastExitAt), "HH:mm")
-                          : "—"}
-                      </TableCell>
-                      <TableCell>{formatMinutes(row.totalInsideMinutes)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="production" className="mt-4 space-y-4">
           <KpiGrid>
+            <KpiCard title="Total Rounds" value={totalRounds} highlighted />
+            <KpiCard title="Rounds This Hour" value={roundsThisHour} />
+            <KpiCard title="Machines" value={machines.length} />
             <KpiCard
-              title="Total Rounds"
-              value={prod?.totalRounds ?? 0}
-              highlighted
-            />
-            <KpiCard title="Active Machines" value={prod?.activeMachines ?? 0} />
-            <KpiCard
-              title="Avg Rounds"
-              value={prod?.avgRoundsPerEmployee ?? 0}
+              title="Factory Date"
+              value={prod?.factoryDate ?? "—"}
             />
           </KpiGrid>
+
+          {machines.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Machine Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Machine</TableHead>
+                      <TableHead>Shift Rounds</TableHead>
+                      <TableHead>This Hour</TableHead>
+                      <TableHead>Target</TableHead>
+                      <TableHead>Achievement</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {machines.map((m) => (
+                      <TableRow key={m.machineId}>
+                        <TableCell className="font-medium">{m.machineId}</TableCell>
+                        <TableCell>{m.totalRounds}</TableCell>
+                        <TableCell>{m.roundsThisHour}</TableCell>
+                        <TableCell>{m.targetRoundsPerShift ?? "—"}</TableCell>
+                        <TableCell>
+                          {m.achievementPercent != null ? `${m.achievementPercent}%` : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

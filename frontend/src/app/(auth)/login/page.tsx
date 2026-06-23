@@ -50,8 +50,8 @@ export default function LoginPage() {
             Enterprise factory operations at a glance
           </h1>
           <p className="max-w-md text-lg text-white/80">
-            Monitor attendance, RFID events, and production rounds in real time with
-            a unified operations hub.
+            Monitor production rounds, machine performance, and shift totals in real time
+            with a unified factory operations hub.
           </p>
         </div>
         <p className="text-sm text-white/60">© Factory Flow</p>

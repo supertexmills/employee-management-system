@@ -1,6 +1,10 @@
 import Employee from "../models/employee/employee.model.js";
 import { AppError } from "../utils/AppError.js";
 import { assertCanManageEmployee } from "./rbac.service.js";
+import {
+  refreshEmployeeInCache,
+  removeEmployeeFromCache,
+} from "./workforce/employeeCache.service.js";
 
 export async function createEmployee(actor, body) {
   assertCanManageEmployee(actor, "create");
@@ -10,7 +14,9 @@ export async function createEmployee(actor, body) {
     createdBy: actor._id,
   });
 
-  return employee.toObject();
+  const result = employee.toObject();
+  refreshEmployeeInCache(result);
+  return result;
 }
 
 export async function listEmployees(actor, query) {
@@ -54,9 +60,21 @@ export async function updateEmployee(actor, id, updates) {
     throw new AppError("Employee not found", 404);
   }
 
+  const previousRfid = employee.rfid;
   Object.assign(employee, updates);
   await employee.save();
-  return employee.toObject();
+
+  const result = employee.toObject();
+  if (previousRfid && previousRfid !== result.rfid) {
+    removeEmployeeFromCache(previousRfid);
+  }
+  if (result.isActive && result.rfid) {
+    refreshEmployeeInCache(result);
+  } else if (result.rfid) {
+    removeEmployeeFromCache(result.rfid);
+  }
+
+  return result;
 }
 
 export async function deleteEmployee(actor, id) {
@@ -67,8 +85,11 @@ export async function deleteEmployee(actor, id) {
     throw new AppError("Employee not found", 404);
   }
 
+  const previousRfid = employee.rfid;
   employee.isActive = false;
   await employee.save();
+
+  if (previousRfid) removeEmployeeFromCache(previousRfid);
 
   return { message: "Employee deactivated successfully" };
 }

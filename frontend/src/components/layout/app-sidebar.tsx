@@ -10,7 +10,6 @@ import {
   Settings,
   Shield,
   Users,
-  UserCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -28,16 +27,13 @@ import { useAuth } from "@/providers/auth-provider";
 import {
   canManageAdmins,
   canManageProduction,
-  canReadAttendance,
   canReadProduction,
 } from "@/lib/rbac";
 
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/employees", label: "Employees", icon: Users },
-  { href: "/attendance", label: "Attendance", icon: UserCheck, permission: "attendance" },
   { href: "/production", label: "Production", icon: Factory, permission: "production" },
-  { href: "/rfid", label: "RFID Monitor", icon: Radio, permission: "attendance" },
 ];
 
 const generalItems = [
@@ -49,13 +45,11 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  const showAttendance = user && canReadAttendance(user.role);
   const showProduction = user && canReadProduction(user.role);
   const showAdmins = user && canManageAdmins(user.role);
   const showManage = user && canManageProduction(user.role);
 
   const filteredMenu = menuItems.filter((item) => {
-    if (item.permission === "attendance") return showAttendance;
     if (item.permission === "production") return showProduction;
     return true;
   });
@@ -74,7 +68,7 @@ export function AppSidebar() {
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
             <p className="text-sm font-bold tracking-tight">Factory Flow</p>
-            <p className="text-xs text-muted-foreground">Operations Hub</p>
+            <p className="text-xs text-muted-foreground">Production Hub</p>
           </div>
         </Link>
       </SidebarHeader>
@@ -165,7 +159,7 @@ export function AppSidebar() {
         <div className="rounded-xl bg-gradient-to-br from-primary to-blue-700 p-4 text-primary-foreground group-data-[collapsible=icon]:hidden">
           <p className="text-sm font-semibold">Factory Operations</p>
           <p className="mt-1 text-xs text-primary-foreground/80">
-            Real-time attendance & production tracking
+            Real-time production round tracking
           </p>
         </div>
       </SidebarFooter>

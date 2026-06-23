@@ -1,6 +1,6 @@
 import net from "net";
 import { env } from "../../config/env.js";
-import { enqueueSave, drainSaveQueue } from "./rfidEvent.service.js";
+import { enqueueRound, drainRoundQueue } from "../production/roundIngest.service.js";
 
 const C8_SINGLE_TAG = Buffer.from("AAAAFF05C8003A5E", "hex");
 
@@ -95,7 +95,7 @@ function connectReader() {
     if (!epcs.length) return;
 
     for (const epc of epcs) {
-      enqueueSave(epc, rawHex, readerState.readerId, readerState.location);
+      enqueueRound(epc, rawHex, readerState.readerId);
     }
   });
 
@@ -135,5 +135,5 @@ export async function stopRfidReader() {
   }
 
   connected = false;
-  await drainSaveQueue();
+  await drainRoundQueue();
 }

@@ -9,7 +9,10 @@ import {
   shouldCountOutsideShift,
 } from "../shift/shiftResolver.service.js";
 import { publishRoundEvent, publishProductionChanged } from "../rfid/eventBus.js";
-import { getEmployeeByEpc, refreshEmployeeInCache } from "../rfid/rfidEvent.service.js";
+import {
+  getEmployeeByEpc,
+  refreshEmployeeInCache,
+} from "../workforce/employeeCache.service.js";
 
 const lastRoundAtByKey = new Map();
 const readerByReaderId = new Map();

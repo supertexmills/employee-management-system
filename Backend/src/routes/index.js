@@ -8,8 +8,6 @@ import { getProductionHealth } from "../services/production/roundSummary.service
 import authRoutes from "./auth.routes.js";
 import adminRoutes from "./admin.routes.js";
 import employeeRoutes from "./employee.routes.js";
-import attendanceRoutes from "./attendance.routes.js";
-import rfidRoutes from "./rfid.routes.js";
 import productionRoutes from "./production.routes.js";
 import mediaRoutes from "./media.routes.js";
 
@@ -39,7 +37,6 @@ router.get("/health", async (_req, res) => {
     db: dbOk ? "ok" : "disconnected",
     rfid: getReaderStatus(),
     production: {
-      modeOnly: env.productionModeOnly,
       machinesActive: production.machinesActive,
     },
     env: env.nodeEnv,
@@ -52,8 +49,6 @@ router.use("/auth", authRoutes);
 router.use("/media", mediaRoutes);
 router.use("/admins", adminRoutes);
 router.use("/employees", employeeRoutes);
-router.use("/attendance", attendanceRoutes);
-router.use("/rfid", rfidRoutes);
 router.use("/v1/production", productionRoutes);
 
 export default router;

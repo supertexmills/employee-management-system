@@ -2,9 +2,6 @@ import { env } from "./src/config/env.js";
 import { createApp } from "./src/app.js";
 import { bootstrap } from "./src/bootstrap.js";
 import { stopRfidReader } from "./src/services/rfid/rfidReader.service.js";
-import {
-  stopAttendanceScheduler,
-} from "./src/services/attendance/attendanceScheduler.service.js";
 
 const app = createApp();
 
@@ -32,7 +29,6 @@ async function start() {
 
 async function shutdown(signal) {
   console.log(`${signal} received, shutting down...`);
-  stopAttendanceScheduler();
   await stopRfidReader();
 
   if (httpServer) {

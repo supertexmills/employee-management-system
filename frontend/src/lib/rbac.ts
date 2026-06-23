@@ -8,14 +8,6 @@ const EMPLOYEE_RECORD_ACTIONS: Record<Role, string[]> = {
   employee: [],
 };
 
-const ATTENDANCE_ACTIONS: Record<Role, string[]> = {
-  super_admin: ["read", "manage"],
-  admin: ["read", "manage"],
-  manager: ["read"],
-  hr: ["read", "manage"],
-  employee: [],
-};
-
 const PRODUCTION_ACTIONS: Record<Role, string[]> = {
   super_admin: ["read", "manage"],
   admin: ["read", "manage"],
@@ -28,10 +20,6 @@ const ADMIN_ROLES: Role[] = ["super_admin", "admin"];
 
 export function canManageEmployees(role: Role, action: string) {
   return EMPLOYEE_RECORD_ACTIONS[role]?.includes(action) ?? false;
-}
-
-export function canReadAttendance(role: Role) {
-  return ATTENDANCE_ACTIONS[role]?.includes("read") ?? false;
 }
 
 export function canManageProduction(role: Role) {

@@ -3,7 +3,6 @@ import { ROLES } from "../../../src/constant/roles.js";
 import {
   canPerformAction,
   canManageEmployeeRecord,
-  canManageAttendance,
   canManageProduction,
   getManagedRoles,
 } from "../../../src/constant/permissions.js";
@@ -38,17 +37,6 @@ describe("permissions", () => {
 
     it("allows manager to read employees", () => {
       expect(canManageEmployeeRecord(ROLES.MANAGER, "read")).toBe(true);
-    });
-  });
-
-  describe("canManageAttendance", () => {
-    it("allows admin to manage attendance", () => {
-      expect(canManageAttendance(ROLES.ADMIN, "manage")).toBe(true);
-    });
-
-    it("allows manager read-only attendance", () => {
-      expect(canManageAttendance(ROLES.MANAGER, "read")).toBe(true);
-      expect(canManageAttendance(ROLES.MANAGER, "manage")).toBe(false);
     });
   });
 

@@ -46,18 +46,6 @@ export function canManageEmployeeRecord(actorRole, action) {
   return EMPLOYEE_RECORD_ACTIONS[actorRole]?.includes(action) ?? false;
 }
 
-export const ATTENDANCE_ACTIONS = {
-  super_admin: ["read", "manage"],
-  admin: ["read", "manage"],
-  manager: ["read"],
-  hr: ["read", "manage"],
-  employee: [],
-};
-
-export function canManageAttendance(actorRole, action) {
-  return ATTENDANCE_ACTIONS[actorRole]?.includes(action) ?? false;
-}
-
 export const PRODUCTION_ACTIONS = {
   super_admin: ["read", "manage"],
   admin: ["read", "manage"],

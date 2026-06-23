@@ -5,10 +5,6 @@ export const queryKeys = {
     ["employees", page ?? 1, search ?? "", department ?? ""] as const,
   employee: (id: string) => ["employee", id] as const,
   health: () => ["health"] as const,
-  attendanceSummary: (filters?: Record<string, string>) =>
-    ["attendance-summary", filters ?? {}] as const,
-  attendanceLive: (filters?: Record<string, string>) =>
-    ["attendance-live", filters ?? {}] as const,
   productionLive: (filters?: Record<string, string>) =>
     ["production-live", filters ?? {}] as const,
   productionShiftSummary: (filters?: Record<string, string>) =>
@@ -19,8 +15,5 @@ export const queryKeys = {
   productionReaders: () => ["production-readers"] as const,
   readersStatus: () => ["readers-status"] as const,
   rounds: (page?: number) => ["production-rounds", page ?? 1] as const,
-  rfidEvents: (params?: Record<string, string | number>) =>
-    ["rfid-events", params ?? {}] as const,
-  recentRfid: () => ["recent-rfid"] as const,
-  unknownTags: (limit?: number) => ["unknown-tags-count", limit ?? 1] as const,
+  recentRounds: () => ["recent-rounds"] as const,
 };

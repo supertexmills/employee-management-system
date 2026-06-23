@@ -1,4 +1,4 @@
-import type { AttendanceStatus, Department, Role, Shift } from "@/lib/constants";
+import type { Department, Role, Shift } from "@/lib/constants";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -48,45 +48,8 @@ export interface Employee {
   createdAt?: string;
 }
 
-export interface AttendanceSummary {
-  date: string;
-  totalActive: number;
-  insideNow: number;
-  presentToday: number;
-  absentToday: number;
-  lateToday: number;
-  overtimeNow: number;
-  exitedToday: number;
-  updatedAt: string;
-}
-
-export interface AttendanceDay {
-  _id: string;
-  employee: Employee | string;
-  date: string;
-  department: Department;
-  shift: Shift;
-  status: AttendanceStatus;
-  firstEntryAt: string | null;
-  lastExitAt: string | null;
-  currentState: string;
-  totalInsideMinutes: number;
-  isLate: boolean;
-  isOvertime: boolean;
-}
-
-export interface RfidEvent {
-  _id: string;
-  epc: string;
-  employee?: Employee | string | null;
-  employeeName?: string | null;
-  action: "ENTRY" | "EXIT" | "UNKNOWN";
-  readerId: string;
-  location: string;
-  detectedAt: string;
-}
-
 export interface ReaderStatus {
+  enabled?: boolean;
   readerId: string;
   connected: boolean;
   location?: string;
@@ -125,6 +88,23 @@ export interface ProductionSummary {
     machineId: string;
     totalRounds: number;
   }[];
+}
+
+export interface EmployeeMachineSummary {
+  machineId: string;
+  totalRounds: number;
+  roundsThisHour: number;
+  hourlyRounds: { hourIndex: number; hourLabel: string; rounds: number }[];
+  targetRoundsPerShift: number | null;
+  achievementPercent: number | null;
+  lastRoundAt: string | null;
+}
+
+export interface EmployeeProductionSummary {
+  employee: Employee;
+  factoryDate: string;
+  shift: Shift;
+  machines: EmployeeMachineSummary[];
 }
 
 export interface MachineRound {
@@ -189,6 +169,6 @@ export interface HealthStatus {
   timestamp: string;
   db: string;
   rfid: ReaderStatus;
-  production: { modeOnly: boolean; machinesActive: number };
+  production: { machinesActive: number };
   env: string;
 }

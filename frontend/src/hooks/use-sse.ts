@@ -76,18 +76,6 @@ export function useSse(path: string, onEvent: SseHandler, enabled = true) {
   return { connected };
 }
 
-export function useRfidStream(
-  onEvent: SseHandler,
-  params?: { department?: string; shift?: string },
-  enabled = true
-) {
-  const query = new URLSearchParams();
-  if (params?.department) query.set("department", params.department);
-  if (params?.shift) query.set("shift", params.shift);
-  const qs = query.toString();
-  return useSse(`/rfid/events/stream${qs ? `?${qs}` : ""}`, onEvent, enabled);
-}
-
 export function useProductionStream(
   onEvent: SseHandler,
   params?: { department?: string; shift?: string; machineId?: string },

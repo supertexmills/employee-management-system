@@ -3,13 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Activity,
-  AlertTriangle,
-  CheckCircle2,
-  Factory,
-  Users,
-} from "lucide-react";
+import { Activity, Factory, Users, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { KpiCard, KpiGrid } from "@/components/dashboard/kpi-card";
 import {
@@ -18,7 +12,6 @@ import {
   EmptyState,
 } from "@/components/dashboard/page-header";
 import { DepartmentShiftFilters } from "@/components/filters/department-shift-filters";
-import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,98 +23,85 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import * as attendanceApi from "@/lib/api/attendance";
 import * as healthApi from "@/lib/api/health";
 import * as productionApi from "@/lib/api/production";
-import * as rfidApi from "@/lib/api/rfid";
-import type { AttendanceSummary } from "@/lib/api/types";
-import { useRfidStream } from "@/hooks/use-sse";
+import type { ProductionLive } from "@/lib/api/types";
+import { useProductionStream } from "@/hooks/use-sse";
+import { queryKeys } from "@/lib/query-keys";
 
 const DashboardCharts = dynamic(
   () =>
     import("./dashboard-charts").then((mod) => ({ default: mod.DashboardCharts })),
   {
-    loading: () => (
-      <div className="grid gap-6 lg:grid-cols-2">
-        <PageSkeleton variant="chart" />
-        <PageSkeleton variant="chart" />
-      </div>
-    ),
+    loading: () => <PageSkeleton variant="chart" />,
     ssr: false,
   }
 );
 
 export default function DashboardPage() {
   const [department, setDepartment] = useState<string>("all");
-  const [shift, setShift] = useState<string>("all");
+  const [shift, setShift] = useState<string>("morning");
   const queryClient = useQueryClient();
 
   const filters = useMemo(
     () => ({
       ...(department !== "all" ? { department } : {}),
-      ...(shift !== "all" ? { shift } : {}),
+      shift,
     }),
     [department, shift]
   );
 
   const { data: health, isLoading: healthLoading } = useQuery({
-    queryKey: ["health"],
-    queryFn: getHealth,
+    queryKey: queryKeys.health(),
+    queryFn: () => healthApi.getHealth(),
     refetchInterval: 60_000,
   });
 
-  const { data: attendance, isLoading: attendanceLoading } = useQuery({
-    queryKey: ["attendance-summary", filters],
-    queryFn: () => attendanceApi.getTodaySummary(filters),
-    refetchInterval: 30_000,
+  const { data: live, isLoading: liveLoading } = useQuery({
+    queryKey: queryKeys.productionLive(filters),
+    queryFn: () => productionApi.getProductionLive(filters),
+    refetchInterval: 10_000,
   });
 
   const { data: production, isLoading: productionLoading } = useQuery({
-    queryKey: ["production-summary", filters],
-    queryFn: () => productionApi.getProductionTodaySummary(filters),
+    queryKey: queryKeys.productionShiftSummary(filters),
+    queryFn: () => productionApi.getProductionShiftSummary(filters),
     refetchInterval: 30_000,
   });
 
-  const { data: events } = useQuery({
-    queryKey: ["recent-rfid"],
-    queryFn: () => rfidApi.listRfidEvents({ limit: 10, page: 1 }),
+  const { data: recentRounds } = useQuery({
+    queryKey: queryKeys.recentRounds(),
+    queryFn: () => productionApi.listRounds({ limit: 10, page: 1 }),
     refetchInterval: 30_000,
   });
 
   const onSse = useCallback(
     (event: string, data: unknown) => {
-      if (event === "attendance:summary") {
-        queryClient.setQueryData(["attendance-summary", filters], {
+      if (event === "production:live") {
+        queryClient.setQueryData(queryKeys.productionLive(filters), {
           success: true,
-          data: data as AttendanceSummary,
+          data: data as ProductionLive,
         });
+      }
+      if (event === "production:round") {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.recentRounds() });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.productionShiftSummary(filters) });
       }
     },
     [queryClient, filters]
   );
 
-  const { connected } = useRfidStream(onSse, filters);
+  const { connected } = useProductionStream(onSse, filters);
 
-  const summary = attendance?.data;
+  const liveData = live?.data;
   const prod = production?.data;
-
-  const attendanceChart = summary
-    ? [
-        { name: "Present", value: summary.presentToday },
-        { name: "Inside", value: summary.insideNow },
-        { name: "Absent", value: summary.absentToday },
-        { name: "Late", value: summary.lateToday },
-        { name: "Overtime", value: summary.overtimeNow },
-      ]
-    : [];
-
   const hourlyChart = prod?.hourlyTotals ?? [];
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Dashboard"
-        subtitle="A quick view of factory attendance and production updates."
+        subtitle="Live production rounds and shift performance across the factory floor."
         actions={<LiveIndicator connected={connected} />}
       />
 
@@ -132,44 +112,39 @@ export default function DashboardPage() {
         onShiftChange={setShift}
       />
 
-      {attendanceLoading ? (
+      {liveLoading ? (
         <PageSkeleton variant="kpi-grid" />
       ) : (
         <KpiGrid>
           <KpiCard
-            title="Inside Now"
-            value={summary?.insideNow ?? 0}
-            subtitle={`${summary?.totalActive ?? 0} active employees`}
-            highlighted
-            icon={<Users className="size-5" />}
-          />
-          <KpiCard
-            title="Present Today"
-            value={summary?.presentToday ?? 0}
-            subtitle="Checked in today"
-            icon={<CheckCircle2 className="size-5" />}
-          />
-          <KpiCard
             title="Total Rounds"
-            value={prod?.totalRounds ?? 0}
-            subtitle={`${prod?.activeEmployees ?? 0} active on floor`}
+            value={prod?.totalRounds ?? liveData?.totals.roundsTodayShift ?? 0}
+            subtitle="This shift"
+            highlighted
             icon={<Factory className="size-5" />}
           />
           <KpiCard
-            title="Late Today"
-            value={summary?.lateToday ?? 0}
-            subtitle={`${summary?.absentToday ?? 0} absent`}
-            icon={<AlertTriangle className="size-5" />}
+            title="Rounds This Hour"
+            value={liveData?.totals.roundsThisHour ?? 0}
+            subtitle="Live floor activity"
+            icon={<Zap className="size-5" />}
+          />
+          <KpiCard
+            title="Active Machines"
+            value={prod?.activeMachines ?? liveData?.machines.length ?? 0}
+            subtitle="Reporting production"
+            icon={<Activity className="size-5" />}
+          />
+          <KpiCard
+            title="Active Employees"
+            value={prod?.activeEmployees ?? 0}
+            subtitle={`Avg ${prod?.avgRoundsPerEmployee ?? 0} rounds / worker`}
+            icon={<Users className="size-5" />}
           />
         </KpiGrid>
       )}
 
-      <DashboardCharts
-        attendanceChart={attendanceChart}
-        hourlyChart={hourlyChart}
-        attendanceLoading={attendanceLoading}
-        productionLoading={productionLoading}
-      />
+      <DashboardCharts hourlyChart={hourlyChart} productionLoading={productionLoading} />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="shadow-sm lg:col-span-1">
@@ -240,48 +215,42 @@ export default function DashboardPage() {
 
       <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base font-semibold">Recent RFID Activity</CardTitle>
+          <CardTitle className="text-base font-semibold">Recent Rounds</CardTitle>
         </CardHeader>
         <CardContent>
-          {(events?.data ?? []).length === 0 ? (
+          {(recentRounds?.data ?? []).length === 0 ? (
             <EmptyState
-              title="No recent RFID events"
-              description="Gate reader activity will stream here in real time."
+              title="No recent rounds"
+              description="Machine round events will stream here in real time."
             />
           ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Time</TableHead>
-                <TableHead>Employee</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Location</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(events?.data ?? []).map((event) => (
-                <TableRow key={event._id}>
-                  <TableCell className="text-muted-foreground">
-                    {format(new Date(event.detectedAt), "HH:mm:ss")}
-                  </TableCell>
-                  <TableCell>{event.employeeName ?? event.epc}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={event.action} />
-                  </TableCell>
-                  <TableCell>{event.location}</TableCell>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Machine</TableHead>
+                  <TableHead>Hour</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {(recentRounds?.data ?? []).map((round) => (
+                  <TableRow key={round._id}>
+                    <TableCell className="text-muted-foreground">
+                      {format(new Date(round.detectedAt), "HH:mm:ss")}
+                    </TableCell>
+                    <TableCell>{round.employeeName}</TableCell>
+                    <TableCell>{round.machineId}</TableCell>
+                    <TableCell>{round.shiftHourLabel}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
     </div>
   );
-}
-
-async function getHealth() {
-  return healthApi.getHealth();
 }
 
 function HealthRow({

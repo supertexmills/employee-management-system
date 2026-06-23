@@ -1,6 +1,7 @@
 import { apiRequest } from "./client";
 import type {
   ApiResponse,
+  EmployeeProductionSummary,
   Machine,
   MachineRound,
   Pagination,
@@ -99,7 +100,7 @@ export async function updateReader(readerId: string, data: Record<string, unknow
 }
 
 export async function getEmployeeProductionSummary(id: string, params?: Record<string, string>) {
-  return apiRequest<ApiResponse<ProductionSummary>>(
+  return apiRequest<ApiResponse<EmployeeProductionSummary>>(
     `/v1/production/employees/${id}/summary`,
     { params }
   );

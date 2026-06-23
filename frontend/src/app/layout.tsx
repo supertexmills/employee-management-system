@@ -14,7 +14,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Factory Flow | Operations Dashboard",
-  description: "Factory operations dashboard for attendance, RFID, and production tracking",
+  description: "Factory production dashboard for real-time machine round tracking",
   robots: { index: false, follow: false },
 };
 
