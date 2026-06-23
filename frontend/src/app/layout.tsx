@@ -25,7 +25,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
-      <body className={`${inter.variable} min-h-full font-sans antialiased`}>
+      <body
+        className={`${inter.variable} min-h-full font-sans antialiased`}
+        suppressHydrationWarning
+      >
         <ThemeProvider>
           <QueryProvider>
             <AuthProvider>

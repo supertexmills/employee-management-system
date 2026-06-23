@@ -4,15 +4,22 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 
 type HourlyDatum = { hourLabel: string; rounds: number };
+
+const productionHourlyChartConfig = {
+  rounds: { label: "Rounds", color: "#2563eb" },
+} satisfies ChartConfig;
+
+const chartContainerClassName = "aspect-auto h-full w-full min-h-0 min-w-0";
+const chartInitialDimension = { width: 400, height: 288 } as const;
 
 export function ProductionHourlyChart({
   data,
@@ -35,7 +42,11 @@ export function ProductionHourlyChart({
           </div>
         ) : (
           <div className="h-72 w-full min-w-0">
-            <ResponsiveContainer width="100%" height="100%">
+            <ChartContainer
+              config={productionHourlyChartConfig}
+              className={chartContainerClassName}
+              initialDimension={chartInitialDimension}
+            >
               <AreaChart data={data}>
                 <defs>
                   <linearGradient id="roundsGrad" x1="0" y1="0" x2="0" y2="1">
@@ -55,7 +66,7 @@ export function ProductionHourlyChart({
                   strokeWidth={2}
                 />
               </AreaChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </div>
         )}
       </CardContent>

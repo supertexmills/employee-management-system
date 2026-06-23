@@ -53,6 +53,7 @@ function DropdownMenuGroup({ ...props }: MenuPrimitive.Group.Props) {
   return <MenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
 }
 
+/** Must be rendered inside `<DropdownMenuGroup>` or `<DropdownMenuRadioGroup>`. */
 function DropdownMenuLabel({
   className,
   inset,
