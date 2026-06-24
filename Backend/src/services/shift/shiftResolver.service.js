@@ -87,6 +87,16 @@ export async function resolveRoundContext(detectedAt, employeeShift, machineDefa
   };
 }
 
+export async function resolveCurrentFactoryShift(detectedAt = new Date()) {
+  for (const shift of SHIFTS) {
+    const schedule = await getScheduleByShift(shift);
+    if (schedule && isWithinShift(detectedAt, schedule)) {
+      return shift;
+    }
+  }
+  return "morning";
+}
+
 export function resolveShiftForTimestamp(detectedAt) {
   const factoryDate = getFactoryDate(detectedAt);
   return { factoryDate, shifts: SHIFTS };

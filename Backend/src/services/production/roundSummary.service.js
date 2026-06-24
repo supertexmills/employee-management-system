@@ -3,7 +3,11 @@ import Machine from "../../models/production/machine.model.js";
 import MachineRound from "../../models/production/machineRound.model.js";
 import MachineShiftSummary from "../../models/production/machineShiftSummary.model.js";
 import { getFactoryDate } from "../../utils/factoryDate.js";
-import { getScheduleByShift } from "../shift/shiftResolver.service.js";
+import {
+  getScheduleByShift,
+  getShiftHourIndex,
+  resolveCurrentFactoryShift,
+} from "../shift/shiftResolver.service.js";
 import { getReaderStatus } from "../rfid/rfidReader.service.js";
 import { assertCanReadProduction } from "../rbac.service.js";
 import { AppError } from "../../utils/AppError.js";
@@ -28,24 +32,35 @@ export async function getLiveSnapshot(query = {}) {
 
   const machines = await Machine.find(machineFilter).populate("reader").lean();
   const readerStatus = getReaderStatus();
+  const currentHourIndex = schedule ? getShiftHourIndex(new Date(), schedule) : 0;
+  const activeShift = query.shift ?? shift;
 
   const machineStats = await Promise.all(
     machines.map(async (machine) => {
       const summaryFilter = {
         ...filter,
         machineId: machine.machineId,
-        shift: query.shift ?? shift,
+        shift: activeShift,
       };
 
-      const [summaries, lastRound] = await Promise.all([
+      const roundFilter = {
+        machineId: machine.machineId,
+        factoryDate,
+        shift: activeShift,
+      };
+      if (query.department) roundFilter.department = query.department;
+
+      const [summaries, lastRound, totalRoundsShift, roundsThisHour] = await Promise.all([
         MachineShiftSummary.find(summaryFilter).lean(),
         MachineRound.findOne({ machineId: machine.machineId })
           .sort({ detectedAt: -1 })
           .lean(),
+        MachineRound.countDocuments(roundFilter),
+        MachineRound.countDocuments({
+          ...roundFilter,
+          shiftHourIndex: currentHourIndex,
+        }),
       ]);
-
-      const totalRoundsShift = summaries.reduce((sum, s) => sum + s.totalRounds, 0);
-      const roundsThisHour = summaries.reduce((sum, s) => sum + s.roundsThisHour, 0);
       const linkedReaderId = machine.reader?.readerId;
 
       return {
@@ -74,6 +89,7 @@ export async function getLiveSnapshot(query = {}) {
   return {
     factoryDate,
     shift: query.shift ?? shift,
+    currentShift: await resolveCurrentFactoryShift(),
     shiftWindow: schedule
       ? {
           start: schedule.startTime,

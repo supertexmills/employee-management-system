@@ -3,6 +3,7 @@ import Machine from "../../models/production/machine.model.js";
 import { AppError } from "../../utils/AppError.js";
 import { assertCanReadProduction, assertCanManageProduction } from "../rbac.service.js";
 import { getReaderStatus } from "../rfid/rfidReader.service.js";
+import { getAllStatus } from "../rfid/readerManager.service.js";
 import { refreshMachineInCache } from "./roundCounter.service.js";
 
 export async function listReaders(actor, query) {
@@ -31,7 +32,8 @@ export async function getReadersStatus(actor) {
   assertCanReadProduction(actor);
 
   const readers = await Reader.find({ isActive: true }).lean();
-  const tcpStatus = getReaderStatus();
+  const liveStatuses = getAllStatus();
+  const primaryStatus = getReaderStatus();
 
   const data = await Promise.all(
     readers.map(async (reader) => {
@@ -39,14 +41,17 @@ export async function getReadersStatus(actor) {
         ? await Machine.findById(reader.machine).select("machineId").lean()
         : null;
 
-      const isTcpReader = reader.readerId === tcpStatus.readerId;
+      const live = liveStatuses[reader.readerId];
+      const isPrimary = reader.readerId === primaryStatus.readerId;
 
       return {
         readerId: reader.readerId,
         type: reader.type,
         machineId: machine?.machineId ?? null,
-        connected: isTcpReader ? tcpStatus.connected : false,
-        lastSeenAt: isTcpReader ? tcpStatus.lastSeenAt : reader.lastSeenAt,
+        connected: live?.connected ?? (isPrimary ? primaryStatus.connected : false),
+        lastSeenAt: live?.lastSeenAt ?? (isPrimary ? primaryStatus.lastSeenAt : reader.lastSeenAt),
+        tagsReceived: live?.tagsReceived ?? (isPrimary ? primaryStatus.tagsReceived : 0),
+        parseErrors: live?.parseErrors ?? (isPrimary ? primaryStatus.parseErrors : 0),
         ip: reader.ip,
         port: reader.port,
         location: reader.location,

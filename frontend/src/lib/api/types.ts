@@ -69,6 +69,7 @@ export interface ProductionLiveMachine {
 export interface ProductionLive {
   factoryDate: string;
   shift: Shift;
+  currentShift: Shift;
   shiftWindow: { start: string; end: string; timezone: string } | null;
   machines: ProductionLiveMachine[];
   totals: { roundsThisHour: number; roundsTodayShift: number };

@@ -33,6 +33,7 @@ export async function seedProductionIfEmpty() {
   const reader = await Reader.create({
     readerId: env.rfidReaderId,
     type: "MACHINE",
+    protocol: "BINARY_TCP",
     ip: env.rfidReaderIp,
     port: env.rfidReaderPort,
     location: env.rfidLocation,

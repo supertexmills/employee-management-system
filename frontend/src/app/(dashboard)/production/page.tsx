@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Factory, Wifi, WifiOff } from "lucide-react";
@@ -15,6 +15,11 @@ import * as productionApi from "@/lib/api/production";
 import type { ProductionLive } from "@/lib/api/types";
 import { queryKeys } from "@/lib/query-keys";
 import { useProductionStream } from "@/hooks/use-sse";
+import {
+  applyRoundEvent,
+  patchLiveFromSnapshot,
+  type ProductionRoundEvent,
+} from "@/lib/production-live-cache";
 import { formatShift } from "@/lib/utils";
 
 const ProductionHourlyChart = dynamic(
@@ -31,6 +36,7 @@ const ProductionHourlyChart = dynamic(
 export default function ProductionPage() {
   const [department, setDepartment] = useState("all");
   const [shift, setShift] = useState("morning");
+  const shiftManuallyChanged = useRef(false);
   const queryClient = useQueryClient();
 
   const filters = useMemo(
@@ -41,31 +47,47 @@ export default function ProductionPage() {
     [department, shift]
   );
 
-  const { data: live, isLoading: liveLoading } = useQuery({
-    queryKey: queryKeys.productionLive(filters),
-    queryFn: () => productionApi.getProductionLive(filters),
-    refetchInterval: 10_000,
-  });
-
-  const { data: summary, isLoading: summaryLoading } = useQuery({
-    queryKey: queryKeys.productionShiftSummary(filters),
-    queryFn: () => productionApi.getProductionShiftSummary(filters),
-    refetchInterval: 30_000,
-  });
-
   const onSse = useCallback(
     (event: string, data: unknown) => {
       if (event === "production:live") {
-        queryClient.setQueryData(queryKeys.productionLive(filters), {
-          success: true,
-          data: data as ProductionLive,
-        });
+        const snapshot = data as ProductionLive;
+        patchLiveFromSnapshot(queryClient, filters, snapshot);
+        if (!shiftManuallyChanged.current && snapshot.currentShift) {
+          setShift(snapshot.currentShift);
+        }
+      }
+      if (event === "production:round") {
+        applyRoundEvent(queryClient, filters, data as ProductionRoundEvent);
       }
     },
     [queryClient, filters]
   );
 
   const { connected } = useProductionStream(onSse, filters);
+
+  const { data: live, isLoading: liveLoading } = useQuery({
+    queryKey: queryKeys.productionLive(filters),
+    queryFn: () => productionApi.getProductionLive(filters),
+    refetchInterval: connected ? false : 10_000,
+  });
+
+  const { data: summary, isLoading: summaryLoading } = useQuery({
+    queryKey: queryKeys.productionShiftSummary(filters),
+    queryFn: () => productionApi.getProductionShiftSummary(filters),
+    refetchInterval: connected ? 60_000 : 30_000,
+  });
+
+  useEffect(() => {
+    const currentShift = live?.data?.currentShift;
+    if (currentShift && !shiftManuallyChanged.current) {
+      setShift(currentShift);
+    }
+  }, [live?.data?.currentShift]);
+
+  const handleShiftChange = useCallback((value: string) => {
+    shiftManuallyChanged.current = true;
+    setShift(value);
+  }, []);
 
   const liveData = live?.data;
   const sum = summary?.data;
@@ -83,7 +105,7 @@ export default function ProductionPage() {
         department={department}
         shift={shift}
         onDepartmentChange={setDepartment}
-        onShiftChange={setShift}
+        onShiftChange={handleShiftChange}
         includeAllShifts={false}
       />
 
@@ -93,7 +115,7 @@ export default function ProductionPage() {
         <KpiGrid>
           <KpiCard
             title="Total Rounds"
-            value={sum?.totalRounds ?? 0}
+            value={liveData?.totals.roundsTodayShift ?? sum?.totalRounds ?? 0}
             subtitle={`Shift: ${formatShift(shift)}`}
             highlighted
             icon={<Factory className="size-5" />}

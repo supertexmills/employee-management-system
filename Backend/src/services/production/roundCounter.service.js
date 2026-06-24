@@ -9,12 +9,13 @@ import {
   shouldCountOutsideShift,
 } from "../shift/shiftResolver.service.js";
 import { publishRoundEvent, publishProductionChanged } from "../rfid/eventBus.js";
+import { markCounted, markRejected } from "../rfid/tagEvent.service.js";
+import { checkDebounce, commitDebounce } from "../rfid/tagFilter.service.js";
 import {
   getEmployeeByEpc,
   refreshEmployeeInCache,
 } from "../workforce/employeeCache.service.js";
 
-const lastRoundAtByKey = new Map();
 const readerByReaderId = new Map();
 const machineByReaderId = new Map();
 
@@ -51,17 +52,6 @@ export function refreshMachineInCache(machine, reader) {
     readerByReaderId.set(reader.readerId, reader);
     machineByReaderId.set(reader.readerId, machine);
   }
-}
-
-function canCountRound(epc, machineId, intervalSeconds) {
-  const key = `${epc}:${machineId}`;
-  const now = Date.now();
-  const last = lastRoundAtByKey.get(key);
-  if (last && now - last < intervalSeconds * 1000) {
-    return false;
-  }
-  lastRoundAtByKey.set(key, now);
-  return true;
 }
 
 function buildRoundKey(epc, machineId, detectedAt, intervalSeconds) {
@@ -171,29 +161,52 @@ async function upsertSummary({ employee, machine, context, detectedAt }) {
   return summary;
 }
 
-export async function processRead({ epc, readerId, rawHex = "", source = "TCP" }) {
+async function getMachineRoundStats(machineId, context) {
+  const { factoryDate, shift, hourIndex } = context;
+  const baseFilter = { machineId, factoryDate, shift };
+
+  const [totalRoundsShift, roundsThisHour] = await Promise.all([
+    MachineRound.countDocuments(baseFilter),
+    MachineRound.countDocuments({ ...baseFilter, shiftHourIndex: hourIndex }),
+  ]);
+
+  return { totalRoundsShift, roundsThisHour };
+}
+
+export async function processRead({
+  epc,
+  readerId,
+  rawHex = "",
+  source = "TCP",
+  eventId = null,
+}) {
   const normalizedEpc = epc.toUpperCase();
   const detectedAt = new Date();
+
+  const reject = async (reason) => {
+    if (eventId) await markRejected(eventId, reason);
+    return null;
+  };
 
   const { reader, machine } = await resolveReaderAndMachine(readerId);
   if (!reader) {
     console.log(`Unknown reader: ${readerId}`);
-    return null;
+    return reject("unknown_reader");
   }
   if (!machine) {
     console.log(`No machine linked to reader: ${readerId}`);
-    return null;
+    return reject("no_machine");
   }
 
   const intervalSeconds =
     machine.minRoundIntervalSeconds ?? env.defaultMinRoundIntervalSeconds;
 
-  if (!canCountRound(normalizedEpc, machine.machineId, intervalSeconds)) {
-    console.log(`Debounce blocked: ${normalizedEpc} @ ${machine.machineId}`);
-    return null;
-  }
-
   const employee = await lookupEmployee(normalizedEpc);
+  if (!employee) {
+    console.warn(
+      `Unregistered RFID tag: ${normalizedEpc} — assign this tag to an employee in the system`
+    );
+  }
   const context = await resolveRoundContext(
     detectedAt,
     employee?.shift,
@@ -202,7 +215,18 @@ export async function processRead({ epc, readerId, rawHex = "", source = "TCP" }
 
   if (!context.withinShift && !shouldCountOutsideShift()) {
     console.log(`Outside shift ignored: ${normalizedEpc}`);
-    return null;
+    return reject("outside_shift");
+  }
+
+  const filterResult = checkDebounce({
+    epc: normalizedEpc,
+    machineId: machine.machineId,
+    intervalSeconds,
+  });
+
+  if (!filterResult.accept) {
+    console.log(`Debounce blocked: ${normalizedEpc} @ ${machine.machineId}`);
+    return reject(filterResult.reason ?? "debounce");
   }
 
   const roundKey = buildRoundKey(
@@ -236,10 +260,12 @@ export async function processRead({ epc, readerId, rawHex = "", source = "TCP" }
   } catch (err) {
     if (err.code === 11000) {
       console.log(`Idempotent round duplicate: ${roundKey}`);
-      return null;
+      return reject("duplicate");
     }
     throw err;
   }
+
+  commitDebounce({ epc: normalizedEpc, machineId: machine.machineId });
 
   let summary = null;
   if (employee) {
@@ -250,6 +276,13 @@ export async function processRead({ epc, readerId, rawHex = "", source = "TCP" }
       detectedAt,
     });
   }
+
+  const machineStats = employee
+    ? {
+        totalRoundsShift: summary.totalRounds,
+        roundsThisHour: summary.roundsThisHour,
+      }
+    : await getMachineRoundStats(machine.machineId, context);
 
   const payload = {
     roundKey: round.roundKey,
@@ -266,8 +299,8 @@ export async function processRead({ epc, readerId, rawHex = "", source = "TCP" }
       : null,
     shiftHourLabel: context.hourLabel,
     shiftHourIndex: context.hourIndex,
-    roundsThisHour: summary?.roundsThisHour ?? null,
-    totalRoundsShift: summary?.totalRounds ?? null,
+    roundsThisHour: machineStats.roundsThisHour,
+    totalRoundsShift: machineStats.totalRoundsShift,
     detectedAt,
     factoryDate: context.factoryDate,
     shift: context.shift,
@@ -276,11 +309,17 @@ export async function processRead({ epc, readerId, rawHex = "", source = "TCP" }
   publishRoundEvent(payload);
   publishProductionChanged();
 
+  if (eventId) {
+    await markCounted(eventId, round.roundKey);
+  }
+
   console.log("ROUND COUNTED:", {
-    employee: employee?.employeeName ?? "Unknown",
+    employee: employee?.employeeName ?? "Unregistered tag",
+    epc: normalizedEpc,
     machine: machine.machineId,
     hour: context.hourLabel,
-    total: summary?.totalRounds,
+    totalRoundsShift: machineStats.totalRoundsShift,
+    roundsThisHour: machineStats.roundsThisHour,
   });
 
   return payload;

@@ -5,6 +5,9 @@ import { getApiBaseUrl } from "@/lib/api/client";
 
 type SseHandler = (event: string, data: unknown) => void;
 
+const INITIAL_RETRY_MS = 1000;
+const MAX_RETRY_MS = 30000;
+
 export function useSse(path: string, onEvent: SseHandler, enabled = true) {
   const [connected, setConnected] = useState(false);
   const onEventRef = useRef(onEvent);
@@ -15,8 +18,23 @@ export function useSse(path: string, onEvent: SseHandler, enabled = true) {
 
     const controller = new AbortController();
     let buffer = "";
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+    let retryAttempt = 0;
+    let stopped = false;
+
+    function scheduleReconnect(connectFn: () => void) {
+      if (stopped) return;
+      const delay = Math.min(MAX_RETRY_MS, INITIAL_RETRY_MS * 2 ** retryAttempt);
+      retryAttempt += 1;
+      retryTimeout = setTimeout(() => {
+        retryTimeout = null;
+        void connectFn();
+      }, delay);
+    }
 
     async function connect() {
+      if (stopped) return;
+
       try {
         const response = await fetch(`${getApiBaseUrl()}${path}`, {
           credentials: "include",
@@ -26,14 +44,16 @@ export function useSse(path: string, onEvent: SseHandler, enabled = true) {
 
         if (!response.ok || !response.body) {
           setConnected(false);
+          scheduleReconnect(connect);
           return;
         }
 
+        retryAttempt = 0;
         setConnected(true);
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
 
-        while (true) {
+        while (!stopped) {
           const { done, value } = await reader.read();
           if (done) break;
 
@@ -42,6 +62,8 @@ export function useSse(path: string, onEvent: SseHandler, enabled = true) {
           buffer = parts.pop() ?? "";
 
           for (const part of parts) {
+            if (part.startsWith(":")) continue;
+
             const lines = part.split("\n");
             let event = "message";
             let data = "";
@@ -60,17 +82,26 @@ export function useSse(path: string, onEvent: SseHandler, enabled = true) {
             }
           }
         }
-      } catch (err) {
-        if ((err as Error).name !== "AbortError") {
+
+        if (!stopped) {
           setConnected(false);
+          scheduleReconnect(connect);
         }
-      } finally {
+      } catch (err) {
+        if ((err as Error).name === "AbortError" || stopped) return;
         setConnected(false);
+        scheduleReconnect(connect);
       }
     }
 
     void connect();
-    return () => controller.abort();
+
+    return () => {
+      stopped = true;
+      if (retryTimeout) clearTimeout(retryTimeout);
+      controller.abort();
+      setConnected(false);
+    };
   }, [path, enabled]);
 
   return { connected };

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { READER_TYPES } from "../../constant/factory.js";
+import { READER_TYPES, READER_PROTOCOLS } from "../../constant/factory.js";
 
 const readerSchema = new mongoose.Schema(
   {
@@ -38,6 +38,11 @@ const readerSchema = new mongoose.Schema(
       type: Number,
       default: 500,
       min: 100,
+    },
+    protocol: {
+      type: String,
+      enum: READER_PROTOCOLS,
+      default: "BINARY_TCP",
     },
     isActive: {
       type: Boolean,

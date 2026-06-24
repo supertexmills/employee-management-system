@@ -34,10 +34,10 @@ export const env = {
   rfidEnabled: process.env.RFID_ENABLED === "true",
   rfidReaderIp: process.env.RFID_READER_IP || "192.168.1.200",
   rfidReaderPort: Number(process.env.RFID_READER_PORT) || 200,
-  rfidReaderId: process.env.RFID_READER_ID || "MILL_01_READER",
-  rfidLocation: process.env.RFID_LOCATION || "Spinning Mill 1",
+  rfidReaderId: process.env.RFID_READER_ID || "GATE_1",
+  rfidLocation: process.env.RFID_LOCATION || "Main Gate",
   rfidReaderPollMs: Number(process.env.RFID_READER_POLL_MS) || 500,
   factoryTimezone: process.env.FACTORY_TIMEZONE || "Asia/Kolkata",
-  defaultMinRoundIntervalSeconds: Number(process.env.DEFAULT_MIN_ROUND_INTERVAL_SECONDS) || 30,
+  defaultMinRoundIntervalSeconds: Number(process.env.DEFAULT_MIN_ROUND_INTERVAL_SECONDS) || 1,
   countOutsideShift: process.env.COUNT_OUTSIDE_SHIFT === "true",
 };
