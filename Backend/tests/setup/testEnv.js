@@ -7,6 +7,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 
 dotenv.config({ path: path.join(root, ".env.test"), override: true });
 
+process.env.NODE_ENV = "test";
+process.env.EMAIL_PROVIDER = "memory";
+process.env.OTP_PEPPER =
+  process.env.OTP_PEPPER || "test-otp-pepper-minimum-32-characters-long";
+
 try {
   const mongoUri = inject("mongoUri");
   if (mongoUri) {

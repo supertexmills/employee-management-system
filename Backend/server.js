@@ -2,6 +2,7 @@ import { env } from "./src/config/env.js";
 import { createApp } from "./src/app.js";
 import { bootstrap } from "./src/bootstrap.js";
 import { stopRfidReader } from "./src/services/rfid/rfidReader.service.js";
+import { stopEmailWorker } from "./src/jobs/email.queue.js";
 
 const app = createApp();
 
@@ -30,6 +31,7 @@ async function start() {
 async function shutdown(signal) {
   console.log(`${signal} received, shutting down...`);
   await stopRfidReader();
+  await stopEmailWorker();
 
   if (httpServer) {
     httpServer.close(() => process.exit(0));

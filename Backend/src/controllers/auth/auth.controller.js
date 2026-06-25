@@ -13,6 +13,13 @@ import {
   setAuthCookies,
 } from "../../utils/auth-cookies.js";
 
+function getRequestContext(req) {
+  return {
+    ip: req.ip,
+    userAgent: req.get("user-agent"),
+  };
+}
+
 export const login = async (req, res, next) => {
   try {
     const result = await authService.login(req.body.email, req.body.password);
@@ -145,7 +152,10 @@ export const removeAvatar = async (req, res, next) => {
 
 export const forgotPassword = async (req, res, next) => {
   try {
-    const result = await authService.requestPasswordResetOtp(req.body.email);
+    const result = await authService.requestPasswordResetOtp(
+      req.body.email,
+      getRequestContext(req),
+    );
     res.json({ success: true, message: result.message });
   } catch (err) {
     next(err);
@@ -154,7 +164,10 @@ export const forgotPassword = async (req, res, next) => {
 
 export const resendOtp = async (req, res, next) => {
   try {
-    const result = await authService.resendPasswordResetOtp(req.body.email);
+    const result = await authService.resendPasswordResetOtp(
+      req.body.email,
+      getRequestContext(req),
+    );
     res.json({ success: true, message: result.message });
   } catch (err) {
     next(err);
@@ -167,6 +180,7 @@ export const resetPassword = async (req, res, next) => {
       req.body.email,
       req.body.otp,
       req.body.newPassword,
+      getRequestContext(req),
     );
     res.json({ success: true, message: result.message });
   } catch (err) {

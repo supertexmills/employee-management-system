@@ -28,6 +28,21 @@ const passwordResetSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    emailStatus: {
+      type: String,
+      enum: ["pending", "sent", "failed"],
+      default: "pending",
+    },
+    emailSentAt: Date,
+    lastEmailError: {
+      type: String,
+      select: false,
+    },
+    sendCount: {
+      type: Number,
+      default: 0,
+    },
+    sendCountWindowStart: Date,
   },
   { timestamps: true }
 );

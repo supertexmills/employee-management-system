@@ -3,17 +3,22 @@ import PasswordReset from "../models/auth/passwordReset.model.js";
 import { AppError } from "../utils/AppError.js";
 import { issueTokenPair, verifyToken } from "../utils/token.js";
 import { hashPassword, comparePassword } from "../utils/password.js";
+import { generateOtp, hashOtp, verifyOtp } from "../utils/otp.js";
 import { assertCanCreateUser } from "./rbac.service.js";
-import { sendPasswordResetOtp } from "./email/email.service.js";
+import { enqueuePasswordResetEmail } from "../jobs/email.queue.js";
+import {
+  logSecurityEvent,
+  SECURITY_EVENTS,
+} from "./securityAudit.service.js";
 import {
   GENERIC_RESET_MESSAGE,
   MAX_OTP_ATTEMPTS,
+  MAX_OTP_SENDS_PER_24H,
   OTP_EXPIRES_MINUTES,
-  OTP_LENGTH,
   OTP_RESEND_COOLDOWN_SECONDS,
+  OTP_SEND_WINDOW_MS,
   PASSWORD_RESET_ALLOWED_ROLES,
 } from "../constant/passwordReset.js";
-import crypto from "crypto";
 
 async function saveRefreshToken(user, refreshToken) {
   user.refreshToken = await hashPassword(refreshToken);
@@ -54,7 +59,6 @@ export async function refresh(refreshToken) {
 
   const valid = await comparePassword(refreshToken, user.refreshToken);
   if (!valid) {
-    // Valid JWT + matching token version but wrong hash = rotated/reused refresh token
     user.refreshToken = null;
     user.tokenVersion = (user.tokenVersion ?? 0) + 1;
     await user.save();
@@ -156,14 +160,12 @@ export async function changePassword(userId, currentPassword, newPassword) {
   user.tokenVersion = (user.tokenVersion ?? 0) + 1;
   user.refreshToken = null;
   await user.save();
+
+  await PasswordReset.deleteOne({ email: user.email });
 }
 
 function normalizeEmail(email) {
   return email.trim().toLowerCase();
-}
-
-function generateOtp() {
-  return crypto.randomInt(0, 10 ** OTP_LENGTH).toString().padStart(OTP_LENGTH, "0");
 }
 
 function getOtpExpiresAt() {
@@ -182,12 +184,39 @@ async function findEligibleResetUser(email) {
   });
 }
 
-async function issuePasswordResetOtp(email) {
-  const otp = generateOtp();
-  const otpHash = await hashPassword(otp);
-  const now = new Date();
+function resolveSendCount(existing, now) {
+  if (
+    !existing?.sendCountWindowStart ||
+    now.getTime() - existing.sendCountWindowStart.getTime() >= OTP_SEND_WINDOW_MS
+  ) {
+    return { sendCount: 0, sendCountWindowStart: now };
+  }
 
-  await PasswordReset.findOneAndUpdate(
+  return {
+    sendCount: existing.sendCount ?? 0,
+    sendCountWindowStart: existing.sendCountWindowStart,
+  };
+}
+
+function assertWithinSendCap(existing, now) {
+  const { sendCount, sendCountWindowStart } = resolveSendCount(existing, now);
+
+  if (sendCount >= MAX_OTP_SENDS_PER_24H) {
+    throw new AppError("Please wait before requesting another code", 429);
+  }
+
+  return { sendCount, sendCountWindowStart };
+}
+
+async function issuePasswordResetOtp(email, context = {}) {
+  const now = new Date();
+  const existing = await PasswordReset.findOne({ email });
+  const { sendCount, sendCountWindowStart } = assertWithinSendCap(existing, now);
+
+  const otp = generateOtp();
+  const otpHash = hashOtp(otp);
+
+  const resetRecord = await PasswordReset.findOneAndUpdate(
     { email },
     {
       email,
@@ -195,25 +224,40 @@ async function issuePasswordResetOtp(email) {
       expiresAt: getOtpExpiresAt(),
       attempts: 0,
       lastSentAt: now,
+      emailStatus: "pending",
+      emailSentAt: null,
+      sendCount: sendCount + 1,
+      sendCountWindowStart,
+      $unset: { lastEmailError: 1 },
     },
-    { upsert: true, returnDocument: "after" },
+    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
   );
 
-  await sendPasswordResetOtp(email, otp);
+  await enqueuePasswordResetEmail({
+    email,
+    otp,
+    resetId: resetRecord._id,
+  });
+
+  await logSecurityEvent(SECURITY_EVENTS.PASSWORD_RESET_REQUESTED, {
+    email,
+    ip: context.ip,
+    userAgent: context.userAgent,
+  });
 }
 
-export async function requestPasswordResetOtp(email) {
+export async function requestPasswordResetOtp(email, context = {}) {
   const normalized = normalizeEmail(email);
   const user = await findEligibleResetUser(normalized);
 
   if (user) {
-    await issuePasswordResetOtp(normalized);
+    await issuePasswordResetOtp(normalized, context);
   }
 
   return { message: GENERIC_RESET_MESSAGE };
 }
 
-export async function resendPasswordResetOtp(email) {
+export async function resendPasswordResetOtp(email, context = {}) {
   const normalized = normalizeEmail(email);
   const user = await findEligibleResetUser(normalized);
 
@@ -229,11 +273,11 @@ export async function resendPasswordResetOtp(email) {
     }
   }
 
-  await issuePasswordResetOtp(normalized);
+  await issuePasswordResetOtp(normalized, context);
   return { message: GENERIC_RESET_MESSAGE };
 }
 
-export async function resetPasswordWithOtp(email, otp, newPassword) {
+export async function resetPasswordWithOtp(email, otp, newPassword, context = {}) {
   const normalized = normalizeEmail(email);
   const resetRecord = await PasswordReset.findOne({ email: normalized }).select(
     "+otpHash",
@@ -253,10 +297,17 @@ export async function resetPasswordWithOtp(email, otp, newPassword) {
     throw new AppError("Too many attempts. Request a new code.", 400);
   }
 
-  const otpValid = await comparePassword(otp, resetRecord.otpHash);
+  const otpValid = verifyOtp(otp, resetRecord.otpHash);
   if (!otpValid) {
     resetRecord.attempts += 1;
     await resetRecord.save();
+
+    await logSecurityEvent(SECURITY_EVENTS.PASSWORD_RESET_OTP_INVALID, {
+      email: normalized,
+      ip: context.ip,
+      userAgent: context.userAgent,
+      meta: { attempts: resetRecord.attempts },
+    });
 
     if (resetRecord.attempts >= MAX_OTP_ATTEMPTS) {
       await PasswordReset.deleteOne({ email: normalized });
@@ -278,6 +329,13 @@ export async function resetPasswordWithOtp(email, otp, newPassword) {
   await user.save();
 
   await PasswordReset.deleteOne({ email: normalized });
+
+  await logSecurityEvent(SECURITY_EVENTS.PASSWORD_RESET_SUCCESS, {
+    email: normalized,
+    ip: context.ip,
+    userAgent: context.userAgent,
+    meta: { userId: user._id.toString() },
+  });
 
   return { message: "Password updated successfully. Please sign in." };
 }

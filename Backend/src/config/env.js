@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import crypto from "crypto";
 
 dotenv.config();
 
@@ -20,6 +21,26 @@ if (!mongodbUri) {
 
 const nodeEnv = process.env.NODE_ENV || "development";
 
+function resolveOtpPepper() {
+  const pepper = process.env.OTP_PEPPER?.trim();
+  if (pepper) {
+    if (pepper.length < 32) {
+      throw new Error("OTP_PEPPER must be at least 32 characters");
+    }
+    return pepper;
+  }
+
+  if (nodeEnv === "production") {
+    throw new Error("OTP_PEPPER is required in production");
+  }
+
+  const fallback = crypto.randomBytes(32).toString("hex");
+  console.warn(
+    "[env] OTP_PEPPER not set — using ephemeral pepper (OTP hashes will not survive restarts)",
+  );
+  return fallback;
+}
+
 export const env = {
   port: Number(process.env.PORT) || 5000,
   nodeEnv,
@@ -40,10 +61,25 @@ export const env = {
   factoryTimezone: process.env.FACTORY_TIMEZONE || "Asia/Kolkata",
   defaultMinRoundIntervalSeconds: Number(process.env.DEFAULT_MIN_ROUND_INTERVAL_SECONDS) || 1,
   countOutsideShift: process.env.COUNT_OUTSIDE_SHIFT === "true",
+  emailProvider: process.env.EMAIL_PROVIDER || "smtp",
+  emailFromName: process.env.EMAIL_FROM_NAME?.trim() || "SuperTex Mills",
+  emailFromAddress: process.env.EMAIL_FROM_ADDRESS?.trim() || null,
   smtpUser: process.env.SMTP_USER?.trim() || null,
   smtpPass: process.env.SMTP_PASS?.replace(/\s/g, "") || null,
+  smtpHost: process.env.SMTP_HOST || "smtp.gmail.com",
+  smtpPort: Number(process.env.SMTP_PORT) || 465,
+  smtpSecure: process.env.SMTP_SECURE !== "false",
+  smtpConnectionTimeoutMs: Number(process.env.SMTP_CONNECTION_TIMEOUT_MS) || 8_000,
+  smtpGreetingTimeoutMs: Number(process.env.SMTP_GREETING_TIMEOUT_MS) || 8_000,
+  otpPepper: resolveOtpPepper(),
+  redisUrl: process.env.REDIS_URL?.trim() || null,
 };
 
-if (env.isProduction && (!env.smtpUser || !env.smtpPass)) {
-  throw new Error("SMTP_USER and SMTP_PASS are required in production");
+if (env.isProduction) {
+  if (!env.smtpUser || !env.smtpPass) {
+    throw new Error("SMTP_USER and SMTP_PASS are required in production");
+  }
+  if (!env.redisUrl) {
+    throw new Error("REDIS_URL is required in production");
+  }
 }

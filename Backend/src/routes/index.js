@@ -5,6 +5,8 @@ import { csrfProtection } from "../middleware/csrf.middleware.js";
 import { env } from "../config/env.js";
 import { getReaderStatus } from "../services/rfid/rfidReader.service.js";
 import { getProductionHealth } from "../services/production/roundSummary.service.js";
+import { getEmailHealthStatus } from "../email/email.service.js";
+import { isEmailWorkerHealthy } from "../jobs/email.worker.js";
 import authRoutes from "./auth.routes.js";
 import adminRoutes from "./admin.routes.js";
 import employeeRoutes from "./employee.routes.js";
@@ -29,12 +31,21 @@ router.get("/health", async (_req, res) => {
   const dbState = mongoose.connection.readyState;
   const dbOk = dbState === 1;
   const production = await getProductionHealth().catch(() => ({ machinesActive: 0 }));
+  const emailBase = getEmailHealthStatus();
+  const workerOk = isEmailWorkerHealthy();
+  const emailStatus =
+    emailBase.status === "not_configured"
+      ? "not_configured"
+      : workerOk
+        ? "ok"
+        : "degraded";
 
   res.json({
     success: true,
     status: dbOk ? "ok" : "degraded",
     timestamp: new Date().toISOString(),
     db: dbOk ? "ok" : "disconnected",
+    email: { status: emailStatus, provider: emailBase.provider },
     rfid: getReaderStatus(),
     production: {
       machinesActive: production.machinesActive,

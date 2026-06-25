@@ -24,5 +24,8 @@ describe("GET /api/health", () => {
     expect(res.body.success).toBe(true);
     expect(res.body.db).toBe("ok");
     expect(res.body.status).toBe("ok");
+    expect(res.body.email).toBeDefined();
+    expect(res.body.email.provider).toBeDefined();
+    expect(res.body.email.status).toBeDefined();
   });
 });
