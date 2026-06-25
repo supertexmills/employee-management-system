@@ -13,6 +13,35 @@ export async function login(email: string, password: string) {
   );
 }
 
+export async function forgotPassword(email: string) {
+  return apiRequest<ApiResponse<null>>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+    skipRefresh: true,
+  });
+}
+
+export async function resendOtp(email: string) {
+  return apiRequest<ApiResponse<null>>("/auth/resend-otp", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+    skipRefresh: true,
+  });
+}
+
+export async function resetPassword(data: {
+  email: string;
+  otp: string;
+  newPassword: string;
+  confirmPassword: string;
+}) {
+  return apiRequest<ApiResponse<null>>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify(data),
+    skipRefresh: true,
+  });
+}
+
 export async function logout() {
   return apiRequest<ApiResponse<null>>("/auth/logout", { method: "POST" });
 }

@@ -142,3 +142,34 @@ export const removeAvatar = async (req, res, next) => {
     next(err);
   }
 };
+
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const result = await authService.requestPasswordResetOtp(req.body.email);
+    res.json({ success: true, message: result.message });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const resendOtp = async (req, res, next) => {
+  try {
+    const result = await authService.resendPasswordResetOtp(req.body.email);
+    res.json({ success: true, message: result.message });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const result = await authService.resetPasswordWithOtp(
+      req.body.email,
+      req.body.otp,
+      req.body.newPassword,
+    );
+    res.json({ success: true, message: result.message });
+  } catch (err) {
+    next(err);
+  }
+};

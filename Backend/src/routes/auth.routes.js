@@ -10,8 +10,11 @@ import {
 } from "../middleware/upload.middleware.js";
 import {
   changePasswordSchema,
+  forgotPasswordSchema,
   loginSchema,
   registerSchema,
+  resendOtpSchema,
+  resetPasswordSchema,
   updateProfileSchema,
 } from "../validators/auth.validator.js";
 
@@ -41,6 +44,24 @@ const avatarUploadLimiter = env.isTest
 
 router.post("/login", authLimiter, validate(loginSchema), authController.login);
 router.post("/refresh", authLimiter, authController.refresh);
+router.post(
+  "/forgot-password",
+  authLimiter,
+  validate(forgotPasswordSchema),
+  authController.forgotPassword,
+);
+router.post(
+  "/resend-otp",
+  authLimiter,
+  validate(resendOtpSchema),
+  authController.resendOtp,
+);
+router.post(
+  "/reset-password",
+  authLimiter,
+  validate(resetPasswordSchema),
+  authController.resetPassword,
+);
 router.post("/logout", authenticate, authController.logout);
 router.post("/register", authenticate, validate(registerSchema), authController.register);
 router.get("/me", authenticate, authController.me);

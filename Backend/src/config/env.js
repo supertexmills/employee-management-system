@@ -40,4 +40,10 @@ export const env = {
   factoryTimezone: process.env.FACTORY_TIMEZONE || "Asia/Kolkata",
   defaultMinRoundIntervalSeconds: Number(process.env.DEFAULT_MIN_ROUND_INTERVAL_SECONDS) || 1,
   countOutsideShift: process.env.COUNT_OUTSIDE_SHIFT === "true",
+  smtpUser: process.env.SMTP_USER?.trim() || null,
+  smtpPass: process.env.SMTP_PASS?.replace(/\s/g, "") || null,
 };
+
+if (env.isProduction && (!env.smtpUser || !env.smtpPass)) {
+  throw new Error("SMTP_USER and SMTP_PASS are required in production");
+}

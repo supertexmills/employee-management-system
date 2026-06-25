@@ -1,8 +1,19 @@
 import Admin from "../models/admin/admin.model.js";
+import PasswordReset from "../models/auth/passwordReset.model.js";
 import { AppError } from "../utils/AppError.js";
 import { issueTokenPair, verifyToken } from "../utils/token.js";
 import { hashPassword, comparePassword } from "../utils/password.js";
 import { assertCanCreateUser } from "./rbac.service.js";
+import { sendPasswordResetOtp } from "./email/email.service.js";
+import {
+  GENERIC_RESET_MESSAGE,
+  MAX_OTP_ATTEMPTS,
+  OTP_EXPIRES_MINUTES,
+  OTP_LENGTH,
+  OTP_RESEND_COOLDOWN_SECONDS,
+  PASSWORD_RESET_ALLOWED_ROLES,
+} from "../constant/passwordReset.js";
+import crypto from "crypto";
 
 async function saveRefreshToken(user, refreshToken) {
   user.refreshToken = await hashPassword(refreshToken);
@@ -145,4 +156,128 @@ export async function changePassword(userId, currentPassword, newPassword) {
   user.tokenVersion = (user.tokenVersion ?? 0) + 1;
   user.refreshToken = null;
   await user.save();
+}
+
+function normalizeEmail(email) {
+  return email.trim().toLowerCase();
+}
+
+function generateOtp() {
+  return crypto.randomInt(0, 10 ** OTP_LENGTH).toString().padStart(OTP_LENGTH, "0");
+}
+
+function getOtpExpiresAt() {
+  return new Date(Date.now() + OTP_EXPIRES_MINUTES * 60 * 1000);
+}
+
+function getResendCooldownMs() {
+  return OTP_RESEND_COOLDOWN_SECONDS * 1000;
+}
+
+async function findEligibleResetUser(email) {
+  return Admin.findOne({
+    email,
+    status: "active",
+    role: { $in: PASSWORD_RESET_ALLOWED_ROLES },
+  });
+}
+
+async function issuePasswordResetOtp(email) {
+  const otp = generateOtp();
+  const otpHash = await hashPassword(otp);
+  const now = new Date();
+
+  await PasswordReset.findOneAndUpdate(
+    { email },
+    {
+      email,
+      otpHash,
+      expiresAt: getOtpExpiresAt(),
+      attempts: 0,
+      lastSentAt: now,
+    },
+    { upsert: true, returnDocument: "after" },
+  );
+
+  await sendPasswordResetOtp(email, otp);
+}
+
+export async function requestPasswordResetOtp(email) {
+  const normalized = normalizeEmail(email);
+  const user = await findEligibleResetUser(normalized);
+
+  if (user) {
+    await issuePasswordResetOtp(normalized);
+  }
+
+  return { message: GENERIC_RESET_MESSAGE };
+}
+
+export async function resendPasswordResetOtp(email) {
+  const normalized = normalizeEmail(email);
+  const user = await findEligibleResetUser(normalized);
+
+  if (!user) {
+    return { message: GENERIC_RESET_MESSAGE };
+  }
+
+  const existing = await PasswordReset.findOne({ email: normalized });
+  if (existing) {
+    const elapsed = Date.now() - existing.lastSentAt.getTime();
+    if (elapsed < getResendCooldownMs()) {
+      throw new AppError("Please wait before requesting another code", 429);
+    }
+  }
+
+  await issuePasswordResetOtp(normalized);
+  return { message: GENERIC_RESET_MESSAGE };
+}
+
+export async function resetPasswordWithOtp(email, otp, newPassword) {
+  const normalized = normalizeEmail(email);
+  const resetRecord = await PasswordReset.findOne({ email: normalized }).select(
+    "+otpHash",
+  );
+
+  if (!resetRecord) {
+    throw new AppError("Invalid or expired verification code", 400);
+  }
+
+  if (resetRecord.expiresAt < new Date()) {
+    await PasswordReset.deleteOne({ email: normalized });
+    throw new AppError("Verification code expired. Request a new code.", 400);
+  }
+
+  if (resetRecord.attempts >= MAX_OTP_ATTEMPTS) {
+    await PasswordReset.deleteOne({ email: normalized });
+    throw new AppError("Too many attempts. Request a new code.", 400);
+  }
+
+  const otpValid = await comparePassword(otp, resetRecord.otpHash);
+  if (!otpValid) {
+    resetRecord.attempts += 1;
+    await resetRecord.save();
+
+    if (resetRecord.attempts >= MAX_OTP_ATTEMPTS) {
+      await PasswordReset.deleteOne({ email: normalized });
+      throw new AppError("Too many attempts. Request a new code.", 400);
+    }
+
+    throw new AppError("Invalid verification code", 400);
+  }
+
+  const user = await findEligibleResetUser(normalized);
+  if (!user) {
+    await PasswordReset.deleteOne({ email: normalized });
+    throw new AppError("Invalid or expired verification code", 400);
+  }
+
+  user.password = newPassword;
+  user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+  user.refreshToken = null;
+  await user.save();
+
+  await PasswordReset.deleteOne({ email: normalized });
+
+  return { message: "Password updated successfully. Please sign in." };
 }
