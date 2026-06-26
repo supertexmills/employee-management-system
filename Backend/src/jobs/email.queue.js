@@ -62,7 +62,7 @@ export async function enqueuePasswordResetEmail({ email, otp, resetId }) {
   }
 }
 
-export async function startEmailWorker() {
+export async function startEmailWorker({ quiet = false } = {}) {
   if (env.isTest) {
     setEmailWorkerHealthy(true);
     return;
@@ -71,7 +71,11 @@ export async function startEmailWorker() {
   try {
     const connection = await getRedisConnection();
     if (!connection) {
-      logger.warn("Redis not configured — email worker not started");
+      if (quiet) {
+        logger.debug("Redis not configured — email worker not started");
+      } else {
+        logger.warn("Redis not configured — email worker not started");
+      }
       setEmailWorkerHealthy(false);
       return;
     }
@@ -86,7 +90,11 @@ export async function startEmailWorker() {
 
     emailWorker.on("ready", () => {
       setEmailWorkerHealthy(true);
-      logger.info("email_worker_ready");
+      if (quiet) {
+        logger.debug("email_worker_ready");
+      } else {
+        logger.info("email_worker_ready");
+      }
     });
 
     emailWorker.on("failed", (job, err) => {

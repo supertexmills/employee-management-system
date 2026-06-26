@@ -41,9 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
         } else if (err.status === 0 && !connectionErrorShown.current) {
           connectionErrorShown.current = true;
-          toast.error(
-            "Backend unavailable — check that the server is running on port 8080"
-          );
+          toast.error("Backend unavailable — check that the API server is running");
         }
       }
     }
@@ -55,11 +53,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const res = await authApi.login(email, password);
-      setUser(res.data?.user as ProfileUser);
+      await authApi.login(email, password);
+      await refreshUser();
       router.push("/dashboard");
     },
-    [router]
+    [router, refreshUser]
   );
 
   const logout = useCallback(async () => {

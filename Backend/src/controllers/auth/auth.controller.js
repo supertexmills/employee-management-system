@@ -3,9 +3,11 @@ import {
   removeAvatarForUser,
   uploadAvatarForUser,
 } from "../../services/media/avatar.service.js";
+import { getCapabilities } from "../../services/capabilities.service.js";
 import { toSessionUserDto } from "../../dto/auth/session-user.dto.js";
 import { toProfileUserDto } from "../../dto/auth/profile-user.dto.js";
 import { AppError } from "../../utils/AppError.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 import {
   clearAuthCookies,
   generateCsrfToken,
@@ -20,170 +22,124 @@ function getRequestContext(req) {
   };
 }
 
-export const login = async (req, res, next) => {
-  try {
-    const result = await authService.login(req.body.email, req.body.password);
-    const csrfToken = generateCsrfToken();
+export const login = asyncHandler(async (req, res) => {
+  const result = await authService.login(req.body.email, req.body.password);
+  const csrfToken = generateCsrfToken();
 
-    setAuthCookies(res, {
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-      csrfToken,
-    });
+  setAuthCookies(res, {
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken,
+    csrfToken,
+  });
 
-    res.json({
-      success: true,
-      message: "Login successful",
-      data: {
-        user: toSessionUserDto(result.user),
-        expiresIn: getAccessExpiresInSeconds(),
-      },
-    });
-  } catch (err) {
-    next(err);
+  res.json({
+    success: true,
+    message: "Login successful",
+    data: {
+      user: toSessionUserDto(result.user),
+      expiresIn: getAccessExpiresInSeconds(),
+    },
+  });
+});
+
+export const refresh = asyncHandler(async (req, res) => {
+  const token = req.cookies?.refreshToken;
+  const result = await authService.refresh(token);
+  const csrfToken = generateCsrfToken();
+
+  setAuthCookies(res, {
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken,
+    csrfToken,
+  });
+
+  res.json({
+    success: true,
+    data: {
+      expiresIn: getAccessExpiresInSeconds(),
+    },
+  });
+});
+
+export const logout = asyncHandler(async (req, res) => {
+  await authService.logout(req.user._id);
+  clearAuthCookies(res);
+  res.json({ success: true, message: "Logged out successfully" });
+});
+
+export const register = asyncHandler(async (req, res) => {
+  const user = await authService.registerUser(req.user, req.body);
+  res.status(201).json({
+    success: true,
+    data: toSessionUserDto(user),
+  });
+});
+
+export const me = asyncHandler(async (req, res) => {
+  const user = await authService.getMe(req.user._id);
+  res.json({
+    success: true,
+    data: {
+      ...toProfileUserDto(user),
+      capabilities: getCapabilities(user.role),
+    },
+  });
+});
+
+export const updateMe = asyncHandler(async (req, res) => {
+  const user = await authService.updateProfile(req.user._id, req.body);
+  res.json({ success: true, data: toProfileUserDto(user) });
+});
+
+export const changePassword = asyncHandler(async (req, res) => {
+  await authService.changePassword(
+    req.user._id,
+    req.body.currentPassword,
+    req.body.newPassword,
+  );
+  clearAuthCookies(res);
+  res.json({
+    success: true,
+    data: { message: "Password updated. Please sign in again." },
+  });
+});
+
+export const uploadAvatar = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw new AppError("Avatar file is required", 400);
   }
-};
 
-export const refresh = async (req, res, next) => {
-  try {
-    const token = req.cookies?.refreshToken;
-    const result = await authService.refresh(token);
-    const csrfToken = generateCsrfToken();
+  const user = await uploadAvatarForUser(req.user, req.file.buffer, req.file.mimetype);
+  res.json({ success: true, data: toProfileUserDto(user) });
+});
 
-    setAuthCookies(res, {
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-      csrfToken,
-    });
+export const removeAvatar = asyncHandler(async (req, res) => {
+  const user = await removeAvatarForUser(req.user);
+  res.json({ success: true, data: toProfileUserDto(user) });
+});
 
-    res.json({
-      success: true,
-      data: {
-        expiresIn: getAccessExpiresInSeconds(),
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const result = await authService.requestPasswordResetOtp(
+    req.body.email,
+    getRequestContext(req),
+  );
+  res.json({ success: true, message: result.message });
+});
 
-export const logout = async (req, res, next) => {
-  try {
-    await authService.logout(req.user._id);
-    clearAuthCookies(res);
-    res.json({ success: true, message: "Logged out successfully" });
-  } catch (err) {
-    next(err);
-  }
-};
+export const resendOtp = asyncHandler(async (req, res) => {
+  const result = await authService.resendPasswordResetOtp(
+    req.body.email,
+    getRequestContext(req),
+  );
+  res.json({ success: true, message: result.message });
+});
 
-export const register = async (req, res, next) => {
-  try {
-    const user = await authService.registerUser(req.user, req.body);
-    res.status(201).json({
-      success: true,
-      data: toSessionUserDto(user),
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const me = async (req, res, next) => {
-  try {
-    const user = await authService.getMe(req.user._id);
-    res.json({ success: true, data: toProfileUserDto(user) });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const updateMe = async (req, res, next) => {
-  try {
-    const user = await authService.updateProfile(req.user._id, req.body);
-    res.json({ success: true, data: toProfileUserDto(user) });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const changePassword = async (req, res, next) => {
-  try {
-    await authService.changePassword(
-      req.user._id,
-      req.body.currentPassword,
-      req.body.newPassword,
-    );
-    clearAuthCookies(res);
-    res.json({
-      success: true,
-      data: { message: "Password updated. Please sign in again." },
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const uploadAvatar = async (req, res, next) => {
-  try {
-    if (!req.file) {
-      throw new AppError("Avatar file is required", 400);
-    }
-
-    const user = await uploadAvatarForUser(
-      req.user,
-      req.file.buffer,
-      req.file.mimetype,
-    );
-    res.json({ success: true, data: toProfileUserDto(user) });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const removeAvatar = async (req, res, next) => {
-  try {
-    const user = await removeAvatarForUser(req.user);
-    res.json({ success: true, data: toProfileUserDto(user) });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const forgotPassword = async (req, res, next) => {
-  try {
-    const result = await authService.requestPasswordResetOtp(
-      req.body.email,
-      getRequestContext(req),
-    );
-    res.json({ success: true, message: result.message });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const resendOtp = async (req, res, next) => {
-  try {
-    const result = await authService.resendPasswordResetOtp(
-      req.body.email,
-      getRequestContext(req),
-    );
-    res.json({ success: true, message: result.message });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const resetPassword = async (req, res, next) => {
-  try {
-    const result = await authService.resetPasswordWithOtp(
-      req.body.email,
-      req.body.otp,
-      req.body.newPassword,
-      getRequestContext(req),
-    );
-    res.json({ success: true, message: result.message });
-  } catch (err) {
-    next(err);
-  }
-};
+export const resetPassword = asyncHandler(async (req, res) => {
+  const result = await authService.resetPasswordWithOtp(
+    req.body.email,
+    req.body.otp,
+    req.body.newPassword,
+    getRequestContext(req),
+  );
+  res.json({ success: true, message: result.message });
+});

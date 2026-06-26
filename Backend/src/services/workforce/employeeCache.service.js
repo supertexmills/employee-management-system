@@ -15,7 +15,7 @@ export async function hydrateEmployeeCache() {
     if (emp.rfid) employeeByEpc.set(emp.rfid.toUpperCase(), emp);
   }
 
-  console.log(`Employee cache ready: ${employeeByEpc.size} RFID tags`);
+  return employeeByEpc.size;
 }
 
 export function refreshEmployeeInCache(employee) {

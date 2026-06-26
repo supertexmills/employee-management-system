@@ -1,15 +1,25 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import { enqueuePasswordResetEmail } from "../../../src/jobs/email.queue.js";
 import {
   clearLastSentEmail,
   extractOtpFromLastEmail,
 } from "../../../src/email/providers/memory.provider.js";
 import { resetEmailProvider } from "../../../src/email/email.factory.js";
+import { connectTestDb, clearDatabase, disconnectTestDb } from "../../helpers/db.js";
 
 describe("email queue (test mode)", () => {
-  beforeEach(() => {
+  beforeAll(async () => {
+    await connectTestDb();
+  });
+
+  beforeEach(async () => {
+    await clearDatabase();
     clearLastSentEmail();
     resetEmailProvider();
+  });
+
+  afterAll(async () => {
+    await disconnectTestDb();
   });
 
   it("processes password reset email inline in test mode", async () => {

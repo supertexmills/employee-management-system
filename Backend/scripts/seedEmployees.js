@@ -5,7 +5,7 @@ import Admin from "../src/models/admin/admin.model.js";
 import Employee from "../src/models/employee/employee.model.js";
 import { ROLES } from "../src/constant/roles.js";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const EMPLOYEES = [
   {

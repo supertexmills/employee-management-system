@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import crypto from "crypto";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const required = [
   "JWT_ACCESS_SECRET",
@@ -21,6 +21,8 @@ if (!mongodbUri) {
 
 const nodeEnv = process.env.NODE_ENV || "development";
 
+const otpPepperState = { ephemeral: false };
+
 function resolveOtpPepper() {
   const pepper = process.env.OTP_PEPPER?.trim();
   if (pepper) {
@@ -34,15 +36,12 @@ function resolveOtpPepper() {
     throw new Error("OTP_PEPPER is required in production");
   }
 
-  const fallback = crypto.randomBytes(32).toString("hex");
-  console.warn(
-    "[env] OTP_PEPPER not set — using ephemeral pepper (OTP hashes will not survive restarts)",
-  );
-  return fallback;
+  otpPepperState.ephemeral = true;
+  return crypto.randomBytes(32).toString("hex");
 }
 
 export const env = {
-  port: Number(process.env.PORT) || 5000,
+  port: Number(process.env.PORT) || 8080,
   nodeEnv,
   clientUrl: process.env.CLIENT_URL || "http://localhost:3000",
   mongodbUri,
@@ -72,6 +71,7 @@ export const env = {
   smtpConnectionTimeoutMs: Number(process.env.SMTP_CONNECTION_TIMEOUT_MS) || 8_000,
   smtpGreetingTimeoutMs: Number(process.env.SMTP_GREETING_TIMEOUT_MS) || 8_000,
   otpPepper: resolveOtpPepper(),
+  otpPepperEphemeral: otpPepperState.ephemeral,
   redisUrl: process.env.REDIS_URL?.trim() || null,
 };
 

@@ -30,7 +30,7 @@ export const createEmployeeSchema = z.object({
   address: addressSchema,
   joinedDate: z.coerce.date().optional(),
   profilePicture: z.string().trim().nullable().optional(),
-});
+}).strict();
 
 export const updateEmployeeSchema = z
   .object({
@@ -50,13 +50,15 @@ export const updateEmployeeSchema = z
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field is required",
-  });
+  })
+  .strict();
 
 export const listEmployeeQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   department: z.enum(departments).optional(),
   shift: z.enum(shifts).optional(),
+  search: z.string().trim().min(1).max(100).optional(),
   isActive: z
     .enum(["true", "false"])
     .transform((v) => v === "true")

@@ -1,12 +1,9 @@
-import dotenv from "dotenv";
 import Admin from "../src/models/admin/admin.model.js";
 import Reader from "../src/models/production/reader.model.js";
 import Machine from "../src/models/production/machine.model.js";
 import { env } from "../src/config/env.js";
 import { ROLES } from "../src/constant/roles.js";
 import { connectDB } from "../src/config/mongoDB.js";
-
-dotenv.config();
 
 const DEFAULT_MACHINE_ID = "MILL_01";
 

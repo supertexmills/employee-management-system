@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as adminController from "../controllers/admin/admin.controller.js";
 import { authenticate } from "../middleware/auth.middleware.js";
+import { requireAdminAccess } from "../middleware/rbac.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
 import {
   listAdminQuerySchema,
@@ -11,6 +12,7 @@ import {
 const router = Router();
 
 router.use(authenticate);
+router.use(requireAdminAccess);
 
 router.get("/", validate(listAdminQuerySchema, "query"), adminController.list);
 router.get("/:id", validate(adminIdParamSchema, "params"), adminController.getById);

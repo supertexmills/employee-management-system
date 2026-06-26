@@ -13,11 +13,14 @@ export async function bootstrap() {
   await connectDB();
   await seedShiftSchedulesIfEmpty();
   await seedProductionIfEmpty();
-  await hydrateEmployeeCache();
-  await hydrateProductionCaches();
+
+  const employeeTags = await hydrateEmployeeCache();
+  const { readers, machines } = await hydrateProductionCaches();
+
+  let email = env.isTest ? "test" : env.redisUrl ? "queue" : "inline";
 
   if (!env.isTest) {
-    await startEmailWorker();
+    await startEmailWorker({ quiet: true });
 
     if (env.emailProvider !== "memory") {
       const smtpOk = await verifyEmailProvider().catch(() => false);
@@ -25,14 +28,23 @@ export async function bootstrap() {
         throw new Error("SMTP verification failed — check SMTP_USER/SMTP_PASS and network");
       }
       if (!smtpOk) {
-        logger.warn("SMTP verification failed — emails will not send until configured");
+        email = "smtp-unverified";
       }
     }
   }
 
   if (env.rfidEnabled) {
     startRfidReader();
-  } else {
-    console.log("RFID reader disabled (RFID_ENABLED=false)");
   }
+
+  return {
+    db: "ok",
+    employeeTags,
+    readers,
+    machines,
+    redis: env.redisUrl ? "on" : "off",
+    email,
+    rfid: env.rfidEnabled ? "on" : "off",
+    otpEphemeral: env.otpPepperEphemeral,
+  };
 }

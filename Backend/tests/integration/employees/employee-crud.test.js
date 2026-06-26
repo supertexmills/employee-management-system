@@ -81,4 +81,57 @@ describe("Employee CRUD + RBAC", () => {
 
     expect(createRes.status).toBe(403);
   });
+
+  it("finds employees by search across all pages", async () => {
+    const login = await loginAs("admin@test.local");
+    const uniqueName = "Zephyr Unique Search Target";
+
+    for (let i = 0; i < 25; i += 1) {
+      const res = await withCsrf(login.agent, login.csrfToken)
+        .post("/api/employees")
+        .send({
+          ...employeePayload,
+          employeeName: i === 0 ? uniqueName : `Bulk Employee ${i}`,
+          phoneNumber: String(9876500000 + i),
+          rfid: `RFID-BULK-${String(i).padStart(3, "0")}`,
+        });
+      expect(res.status).toBe(201);
+    }
+
+    const listPage1 = await login.agent.get("/api/employees?page=1&limit=20");
+    expect(listPage1.body.data.some((e) => e.employeeName === uniqueName)).toBe(false);
+
+    const searchRes = await login.agent.get(
+      `/api/employees?search=${encodeURIComponent(uniqueName)}`,
+    );
+    expect(searchRes.status).toBe(200);
+    expect(searchRes.body.data).toHaveLength(1);
+    expect(searchRes.body.data[0].employeeName).toBe(uniqueName);
+  });
+
+  it("rejects unknown fields on create and ignores client createdBy", async () => {
+    const login = await loginAs("admin@test.local");
+
+    const strictRes = await withCsrf(login.agent, login.csrfToken)
+      .post("/api/employees")
+      .send({
+        ...employeePayload,
+        phoneNumber: "9876543299",
+        rfid: "RFID-STRICT-001",
+        createdBy: "000000000000000000000000",
+      });
+
+    expect(strictRes.status).toBe(422);
+
+    const createRes = await withCsrf(login.agent, login.csrfToken)
+      .post("/api/employees")
+      .send({
+        ...employeePayload,
+        phoneNumber: "9876543298",
+        rfid: "RFID-STRICT-002",
+      });
+
+    expect(createRes.status).toBe(201);
+    expect(String(createRes.body.data.createdBy)).not.toBe("000000000000000000000000");
+  });
 });

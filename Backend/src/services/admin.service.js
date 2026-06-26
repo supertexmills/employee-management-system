@@ -1,6 +1,7 @@
 import Admin from "../models/admin/admin.model.js";
 import { deleteAvatarFile } from "./media/avatar.service.js";
 import { AppError } from "../utils/AppError.js";
+import { buildTextSearchFilter, paginate } from "../utils/listQuery.js";
 import {
   assertCanModifyUser,
   assertCanReadUser,
@@ -25,18 +26,10 @@ export async function listAdmins(actor, query) {
   if (query.status) {
     filter.status = query.status;
   }
-  if (query.search) {
-    const term = query.search.trim();
-    if (term) {
-      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const pattern = new RegExp(escaped, "i");
-      filter.$or = [{ username: pattern }, { email: pattern }];
-    }
-  }
 
-  const page = query.page ?? 1;
-  const limit = query.limit ?? 20;
-  const skip = (page - 1) * limit;
+  Object.assign(filter, buildTextSearchFilter(query.search, ["username", "email"]));
+
+  const { page, limit, skip } = paginate(query);
 
   const [users, total] = await Promise.all([
     Admin.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }),

@@ -1,6 +1,7 @@
 import dns from "node:dns";
 import mongoose from "mongoose";
 import { env } from "./env.js";
+import { logger } from "./logger.js";
 
 // Windows/ISP DNS often refuses SRV lookups required by mongodb+srv:// URIs.
 if (env.mongodbUri.startsWith("mongodb+srv://")) {
@@ -11,9 +12,9 @@ export async function connectDB({ exitOnFailure = true } = {}) {
   try {
     await mongoose.connect(env.mongodbUri);
 
-    console.log("✅ MongoDB connected successfully");
+    logger.debug("MongoDB connected");
   } catch (error) {
-    console.error("❌ MongoDB connection failed:", error);
+    logger.error({ err: error.message }, "MongoDB connection failed");
 
     if (exitOnFailure) {
       process.exit(1);

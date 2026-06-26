@@ -42,9 +42,10 @@ export async function hydrateProductionCaches() {
     }
   }
 
-  console.log(
-    `Production caches ready: ${readerByReaderId.size} readers, ${machineByReaderId.size} machines`
-  );
+  return {
+    readers: readerByReaderId.size,
+    machines: machineByReaderId.size,
+  };
 }
 
 export function refreshMachineInCache(machine, reader) {

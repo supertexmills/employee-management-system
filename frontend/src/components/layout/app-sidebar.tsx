@@ -45,9 +45,9 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  const showProduction = user && canReadProduction(user.role);
-  const showAdmins = user && canManageAdmins(user.role);
-  const showManage = user && canManageProduction(user.role);
+  const showProduction = user && canReadProduction(user);
+  const showAdmins = user && canManageAdmins(user);
+  const showManage = user && canManageProduction(user);
 
   const filteredMenu = menuItems.filter((item) => {
     if (item.permission === "production") return showProduction;

@@ -21,10 +21,28 @@ export interface SessionUser {
   profilePicture: string | null;
 }
 
+export interface Capabilities {
+  employees: {
+    create: boolean;
+    read: boolean;
+    update: boolean;
+    delete: boolean;
+  };
+  production: {
+    read: boolean;
+    manage: boolean;
+  };
+  admins: {
+    read: boolean;
+    manage: boolean;
+  };
+}
+
 export interface ProfileUser extends SessionUser {
   status: string;
   lastLoginAt: string | null;
   createdAt: string;
+  capabilities: Capabilities;
 }
 
 export interface Employee {

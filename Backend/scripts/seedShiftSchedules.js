@@ -1,9 +1,6 @@
-import dotenv from "dotenv";
 import { connectDB } from "../src/config/mongoDB.js";
 import ShiftSchedule from "../src/models/rfid/shiftSchedule.model.js";
 import { env } from "../src/config/env.js";
-
-dotenv.config();
 
 const DEFAULT_SHIFTS = [
   { shift: "morning", startTime: "06:00", endTime: "14:00" },
