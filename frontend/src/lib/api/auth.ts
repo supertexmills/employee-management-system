@@ -56,17 +56,6 @@ export async function updateProfile(data: { username?: string; email?: string })
   });
 }
 
-export async function changePassword(data: {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}) {
-  return apiRequest<ApiResponse<null>>("/auth/me/password", {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  });
-}
-
 export async function uploadAvatar(file: File) {
   const formData = new FormData();
   formData.append("avatar", file);

@@ -145,25 +145,6 @@ export async function updateProfile(userId, updates) {
   return user.toSafeObject();
 }
 
-export async function changePassword(userId, currentPassword, newPassword) {
-  const user = await Admin.findById(userId).select("+password +refreshToken");
-  if (!user) {
-    throw new AppError("User not found", 404);
-  }
-
-  const valid = await user.comparePassword(currentPassword);
-  if (!valid) {
-    throw new AppError("Current password is incorrect", 400);
-  }
-
-  user.password = newPassword;
-  user.tokenVersion = (user.tokenVersion ?? 0) + 1;
-  user.refreshToken = null;
-  await user.save();
-
-  await PasswordReset.deleteOne({ email: user.email });
-}
-
 function normalizeEmail(email) {
   return email.trim().toLowerCase();
 }

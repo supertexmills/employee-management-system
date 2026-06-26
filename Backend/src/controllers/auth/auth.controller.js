@@ -91,19 +91,6 @@ export const updateMe = asyncHandler(async (req, res) => {
   res.json({ success: true, data: toProfileUserDto(user) });
 });
 
-export const changePassword = asyncHandler(async (req, res) => {
-  await authService.changePassword(
-    req.user._id,
-    req.body.currentPassword,
-    req.body.newPassword,
-  );
-  clearAuthCookies(res);
-  res.json({
-    success: true,
-    data: { message: "Password updated. Please sign in again." },
-  });
-});
-
 export const uploadAvatar = asyncHandler(async (req, res) => {
   if (!req.file) {
     throw new AppError("Avatar file is required", 400);

@@ -9,7 +9,6 @@ import {
   handleUploadError,
 } from "../middleware/upload.middleware.js";
 import {
-  changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
   registerSchema,
@@ -96,13 +95,6 @@ router.post("/logout", authenticate, authController.logout);
 router.post("/register", authenticate, validate(registerSchema), authController.register);
 router.get("/me", authenticate, authController.me);
 router.patch("/me", authenticate, validate(updateProfileSchema), authController.updateMe);
-router.patch(
-  "/me/password",
-  authLimiter,
-  authenticate,
-  validate(changePasswordSchema),
-  authController.changePassword,
-);
 router.post(
   "/me/avatar",
   avatarUploadLimiter,
