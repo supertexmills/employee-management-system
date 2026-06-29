@@ -287,7 +287,7 @@ function HealthRow({
         <p className="text-xs text-muted-foreground">{detail}</p>
       </div>
       <span
-        className={`size-2.5 rounded-full ${ok ? "bg-emerald-500" : "bg-red-500"}`}
+        className={`size-2.5 rounded-full ${ok ? "bg-success" : "bg-destructive"}`}
       />
     </div>
   );

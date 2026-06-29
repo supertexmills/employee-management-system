@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { ThemeSelect } from "@/components/theme/theme-select";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,8 +47,17 @@ export function SettingsContent() {
     <div className="mx-auto max-w-2xl space-y-6">
       <PageHeader
         title="Settings"
-        subtitle="Manage your profile."
+        subtitle="Manage your profile and appearance."
       />
+
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base">Appearance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ThemeSelect />
+        </CardContent>
+      </Card>
 
       <Card className="shadow-sm">
         <CardHeader>

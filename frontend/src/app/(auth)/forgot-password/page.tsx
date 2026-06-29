@@ -37,24 +37,24 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-primary via-blue-600 to-blue-800 p-12 text-white lg:flex">
+      <div className="brand-gradient relative hidden flex-col justify-between overflow-hidden p-12 text-primary-foreground lg:flex">
         <div className="flex items-center gap-3">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-white/15 backdrop-blur">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-primary-foreground/15 backdrop-blur">
             <Factory className="size-6" />
           </div>
           <div>
             <p className="text-lg font-bold">Factory Flow</p>
-            <p className="text-sm text-white/70">Operations Dashboard</p>
+            <p className="text-sm text-primary-foreground/70">Operations Dashboard</p>
           </div>
         </div>
         <div className="space-y-4">
           <h1 className="text-4xl font-bold leading-tight">Reset your password</h1>
-          <p className="max-w-md text-lg text-white/80">
+          <p className="max-w-md text-lg text-primary-foreground/80">
             Enter your account email and we will send a verification code valid for 5
             minutes.
           </p>
         </div>
-        <p className="text-sm text-white/60">© Factory Flow</p>
+        <p className="text-sm text-primary-foreground/60">© Factory Flow</p>
       </div>
 
       <div className="flex items-center justify-center p-6 sm:p-12">

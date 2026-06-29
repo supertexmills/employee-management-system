@@ -34,7 +34,7 @@ export function LiveIndicator({ connected }: { connected: boolean }) {
   return (
     <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
       <span
-        className={`size-2 rounded-full ${connected ? "animate-pulse bg-emerald-500" : "bg-muted-foreground/40"}`}
+        className={`size-2 rounded-full ${connected ? "animate-pulse bg-success" : "bg-muted-foreground/40"}`}
       />
       {connected ? "Live" : "Offline"}
     </div>

@@ -144,7 +144,7 @@ export default function ProductionPage() {
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-base font-semibold">{machine.name}</CardTitle>
                 {machine.readerConnected ? (
-                  <Wifi className="size-4 text-emerald-500" />
+                  <Wifi className="size-4 text-success" />
                 ) : (
                   <WifiOff className="size-4 text-muted-foreground" />
                 )}

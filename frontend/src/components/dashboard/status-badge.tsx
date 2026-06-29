@@ -2,10 +2,14 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 const statusStyles: Record<string, string> = {
-  active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  inactive: "bg-slate-50 text-slate-600 border-slate-200",
-  pending: "bg-amber-50 text-amber-700 border-amber-200",
-  suspended: "bg-red-50 text-red-700 border-red-200",
+  active:
+    "bg-status-success-bg text-status-success-text border-status-success-border",
+  inactive:
+    "bg-status-neutral-bg text-status-neutral-text border-status-neutral-border",
+  pending:
+    "bg-status-warning-bg text-status-warning-text border-status-warning-border",
+  suspended:
+    "bg-status-error-bg text-status-error-text border-status-error-border",
 };
 
 export function StatusBadge({

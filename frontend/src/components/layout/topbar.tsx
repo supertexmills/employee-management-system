@@ -1,11 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
-import { LogOut, Moon, Search, Sun, User } from "lucide-react";
+import { LogOut, Search, User } from "lucide-react";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,8 +21,6 @@ import * as authApi from "@/lib/api/auth";
 export function Topbar() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
-
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-border/80 bg-background/80 px-4 backdrop-blur-md lg:px-6">
       <SidebarTrigger />
@@ -41,16 +38,7 @@ export function Topbar() {
         />
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative rounded-full"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          aria-label="Toggle theme"
-        >
-          <Sun className="size-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute size-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-        </Button>
+        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger className="flex h-10 items-center gap-2 rounded-full px-2 outline-none hover:bg-muted">
             <Avatar className="size-8">
