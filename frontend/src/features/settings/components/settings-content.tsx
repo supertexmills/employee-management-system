@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { ThemeSelect } from "@/components/theme/theme-select";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,11 +19,6 @@ export function SettingsContent() {
   const [profile, setProfile] = useState({
     username: user?.username ?? "",
     email: user?.email ?? "",
-  });
-  const [passwords, setPasswords] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -45,27 +41,23 @@ export function SettingsContent() {
     }
   }
 
-  async function changePassword() {
-    setSaving(true);
-    try {
-      await authApi.changePassword(passwords);
-      setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      toast.success("Password changed");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Password change failed");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   if (!user) return null;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <PageHeader
         title="Settings"
-        subtitle="Manage your profile and account security."
+        subtitle="Manage your profile and appearance."
       />
+
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base">Appearance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ThemeSelect />
+        </CardContent>
+      </Card>
 
       <Card className="shadow-sm">
         <CardHeader>
@@ -107,47 +99,6 @@ export function SettingsContent() {
           </div>
           <Button onClick={() => void saveProfile()} disabled={saving}>
             Save Profile
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base">Change Password</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Current Password</Label>
-            <Input
-              type="password"
-              value={passwords.currentPassword}
-              onChange={(e) =>
-                setPasswords({ ...passwords, currentPassword: e.target.value })
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>New Password</Label>
-            <Input
-              type="password"
-              value={passwords.newPassword}
-              onChange={(e) =>
-                setPasswords({ ...passwords, newPassword: e.target.value })
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Confirm Password</Label>
-            <Input
-              type="password"
-              value={passwords.confirmPassword}
-              onChange={(e) =>
-                setPasswords({ ...passwords, confirmPassword: e.target.value })
-              }
-            />
-          </div>
-          <Button variant="outline" onClick={() => void changePassword()} disabled={saving}>
-            Update Password
           </Button>
         </CardContent>
       </Card>

@@ -45,9 +45,9 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  const showProduction = user && canReadProduction(user.role);
-  const showAdmins = user && canManageAdmins(user.role);
-  const showManage = user && canManageProduction(user.role);
+  const showProduction = user && canReadProduction(user);
+  const showAdmins = user && canManageAdmins(user);
+  const showManage = user && canManageProduction(user);
 
   const filteredMenu = menuItems.filter((item) => {
     if (item.permission === "production") return showProduction;
@@ -156,7 +156,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4">
-        <div className="rounded-xl bg-gradient-to-br from-primary to-blue-700 p-4 text-primary-foreground group-data-[collapsible=icon]:hidden">
+        <div className="brand-gradient rounded-xl p-4 text-primary-foreground group-data-[collapsible=icon]:hidden">
           <p className="text-sm font-semibold">Factory Operations</p>
           <p className="mt-1 text-xs text-primary-foreground/80">
             Real-time production round tracking

@@ -56,7 +56,7 @@ export function KpiCard({
           <div
             className={cn(
               "flex size-10 items-center justify-center rounded-lg",
-              highlighted ? "bg-white/15" : "bg-primary/10 text-primary"
+              highlighted ? "bg-primary-foreground/15" : "bg-primary/10 text-primary"
             )}
           >
             {icon}

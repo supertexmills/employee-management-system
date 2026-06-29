@@ -1,4 +1,8 @@
-import { canManageEmployeeRecord, canManageProduction } from "../constant/permissions.js";
+import {
+  canManageEmployeeRecord,
+  canManageProduction,
+  getManagedRoles,
+} from "../constant/permissions.js";
 import { AppError } from "../utils/AppError.js";
 
 export function authorizeEmployeeAction(action) {
@@ -17,4 +21,11 @@ export function authorizeProductionAction(action) {
     }
     next();
   };
+}
+
+export function requireAdminAccess(req, _res, next) {
+  if (getManagedRoles(req.user.role).length === 0) {
+    return next(new AppError("Forbidden: insufficient permissions", 403));
+  }
+  next();
 }

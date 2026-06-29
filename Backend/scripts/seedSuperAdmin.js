@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import Admin from "../src/models/admin/admin.model.js";
 import { ROLES } from "../src/constant/roles.js";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const mongodbUri = process.env.MONGODB_URI || process.env.MONGODB_URL;
 

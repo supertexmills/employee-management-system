@@ -15,7 +15,13 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 type HourlyDatum = { hourLabel: string; rounds: number };
 
 const productionHourlyChartConfig = {
-  rounds: { label: "Rounds", color: "#2563eb" },
+  rounds: {
+    label: "Rounds",
+    theme: {
+      light: "var(--chart-1)",
+      dark: "var(--chart-1)",
+    },
+  },
 } satisfies ChartConfig;
 
 const chartContainerClassName = "aspect-auto h-full w-full min-h-0 min-w-0";
@@ -50,18 +56,22 @@ export function ProductionHourlyChart({
               <AreaChart data={data}>
                 <defs>
                   <linearGradient id="roundsGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2563eb" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#2563eb" stopOpacity={0} />
+                    <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="var(--border)"
+                />
                 <XAxis dataKey="hourLabel" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                 <Tooltip />
                 <Area
                   type="monotone"
                   dataKey="rounds"
-                  stroke="#2563eb"
+                  stroke="var(--chart-1)"
                   fill="url(#roundsGrad)"
                   strokeWidth={2}
                 />

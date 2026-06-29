@@ -1,5 +1,4 @@
 import { apiRequest, getApiBaseUrl } from "./client";
-import { getCookie } from "@/lib/utils";
 import type { ApiResponse, ProfileUser, SessionUser } from "./types";
 
 export async function login(email: string, password: string) {
@@ -11,6 +10,35 @@ export async function login(email: string, password: string) {
       skipRefresh: true,
     }
   );
+}
+
+export async function forgotPassword(email: string) {
+  return apiRequest<ApiResponse<null>>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+    skipRefresh: true,
+  });
+}
+
+export async function resendOtp(email: string) {
+  return apiRequest<ApiResponse<null>>("/auth/resend-otp", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+    skipRefresh: true,
+  });
+}
+
+export async function resetPassword(data: {
+  email: string;
+  otp: string;
+  newPassword: string;
+  confirmPassword: string;
+}) {
+  return apiRequest<ApiResponse<null>>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify(data),
+    skipRefresh: true,
+  });
 }
 
 export async function logout() {
@@ -28,30 +56,13 @@ export async function updateProfile(data: { username?: string; email?: string })
   });
 }
 
-export async function changePassword(data: {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}) {
-  return apiRequest<ApiResponse<null>>("/auth/me/password", {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  });
-}
-
 export async function uploadAvatar(file: File) {
   const formData = new FormData();
   formData.append("avatar", file);
-  const csrf = getCookie("csrfToken");
-  const response = await fetch(`${getApiBaseUrl()}/auth/me/avatar`, {
+  return apiRequest<ApiResponse<ProfileUser>>("/auth/me/avatar", {
     method: "POST",
-    credentials: "include",
-    headers: csrf ? { "X-CSRF-Token": csrf } : {},
     body: formData,
   });
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.message ?? "Upload failed");
-  return payload as ApiResponse<ProfileUser>;
 }
 
 export async function deleteAvatar() {

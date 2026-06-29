@@ -44,7 +44,7 @@ export function EmployeesContent() {
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const canCreate = user && canManageEmployees(user.role, "create");
+  const canCreate = canManageEmployees(user, "create");
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.employees(page, search, department),
@@ -54,6 +54,7 @@ export function EmployeesContent() {
         limit: 20,
         ...(department !== "all" ? { department } : {}),
         ...(shift !== "all" ? { shift } : {}),
+        ...(search.trim() ? { search: search.trim() } : {}),
       }),
   });
 
@@ -66,12 +67,7 @@ export function EmployeesContent() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const employees = (data?.data ?? []).filter((e) =>
-    search
-      ? e.employeeName.toLowerCase().includes(search.toLowerCase()) ||
-        e.employeeId.toLowerCase().includes(search.toLowerCase())
-      : true
-  );
+  const employees = data?.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -95,7 +91,10 @@ export function EmployeesContent() {
             placeholder="Search by name or ID..."
             className="pl-10"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
           />
         </div>
         <Select value={department} onValueChange={(v) => v && setDepartment(v)}>
@@ -171,7 +170,7 @@ export function EmployeesContent() {
                       >
                         View
                       </Button>
-                      {user && canManageEmployees(user.role, "delete") && emp.isActive && (
+                      {canManageEmployees(user, "delete") && emp.isActive && (
                         <Button
                           variant="ghost"
                           size="sm"

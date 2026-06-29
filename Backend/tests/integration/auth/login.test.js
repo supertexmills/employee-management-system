@@ -30,6 +30,8 @@ describe("POST /api/auth/login", () => {
     const meRes = await agent.get("/api/auth/me");
     expect(meRes.status).toBe(200);
     expect(meRes.body.data.email).toBe("admin@test.local");
+    expect(meRes.body.data.capabilities.employees.create).toBe(true);
+    expect(meRes.body.data.capabilities.production.manage).toBe(true);
   });
 
   it("returns 401 for invalid password", async () => {

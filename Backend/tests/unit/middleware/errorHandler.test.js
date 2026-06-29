@@ -7,6 +7,10 @@ vi.mock("../../../src/config/env.js", () => ({
   env: { isProduction: false },
 }));
 
+vi.mock("../../../src/config/logger.js", () => ({
+  logger: { error: vi.fn() },
+}));
+
 function mockRes() {
   const res = {
     statusCode: 200,

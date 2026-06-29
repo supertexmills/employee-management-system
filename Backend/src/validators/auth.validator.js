@@ -38,9 +38,21 @@ export const updateProfileSchema = z
     message: "At least one field is required",
   });
 
-export const changePasswordSchema = z
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email"),
+});
+
+export const resendOtpSchema = z.object({
+  email: z.string().email("Invalid email"),
+});
+
+export const resetPasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, "Current password is required"),
+    email: z.string().email("Invalid email"),
+    otp: z
+      .string()
+      .length(6, "OTP must be 6 digits")
+      .regex(/^\d{6}$/, "OTP must be 6 digits"),
     newPassword: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string().min(8, "Confirm password is required"),
   })

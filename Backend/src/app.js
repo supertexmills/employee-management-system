@@ -1,4 +1,5 @@
 import express from "express";
+import crypto from "crypto";
 import helmet from "helmet";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -8,6 +9,15 @@ import { errorHandler } from "./middleware/errorHandler.js";
 
 export function createApp() {
   const app = express();
+
+  app.set("trust proxy", 1);
+
+  app.use((req, res, next) => {
+    const id = req.headers["x-request-id"] ?? crypto.randomUUID();
+    req.id = id;
+    res.setHeader("X-Request-Id", id);
+    next();
+  });
 
   app.use(
     helmet({

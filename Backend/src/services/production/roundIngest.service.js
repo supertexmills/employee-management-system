@@ -1,6 +1,7 @@
 import { processRead } from "./roundCounter.service.js";
 import { createTagEvent } from "../rfid/types/tagEvent.js";
 import { persistRawTagEvent } from "../rfid/tagEvent.service.js";
+import { logger } from "../../config/logger.js";
 
 let ingestQueue = Promise.resolve();
 
@@ -25,7 +26,7 @@ export function enqueueTagEvent(tagEvent) {
   ingestQueue = ingestQueue
     .then(() => ingestTagEvent(tagEvent))
     .catch((error) => {
-      console.error("Round ingest error:", error.message);
+      logger.error({ err: error.message }, "round_ingest_error");
     });
 }
 

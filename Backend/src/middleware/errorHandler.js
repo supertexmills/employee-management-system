@@ -1,8 +1,9 @@
 import { ZodError } from "zod";
 import { AppError } from "../utils/AppError.js";
 import { env } from "../config/env.js";
+import { logger } from "../config/logger.js";
 
-export function errorHandler(err, _req, res, _next) {
+export function errorHandler(err, req, res, _next) {
   if (err instanceof ZodError) {
     return res.status(422).json({
       success: false,
@@ -36,7 +37,10 @@ export function errorHandler(err, _req, res, _next) {
     });
   }
 
-  console.error(err);
+  logger.error(
+    { err: err.message, stack: err.stack, requestId: req.id },
+    "unhandled_error",
+  );
   return res.status(500).json({
     success: false,
     message: env.isProduction ? "Internal server error" : err.message,

@@ -77,7 +77,7 @@ export async function apiRequest<T>(
     const csrf = getCookie("csrfToken");
     if (csrf) requestHeaders.set("X-CSRF-Token", csrf);
   }
-  if (init.body && !requestHeaders.has("Content-Type")) {
+  if (init.body && !(init.body instanceof FormData) && !requestHeaders.has("Content-Type")) {
     requestHeaders.set("Content-Type", "application/json");
   }
 
@@ -112,7 +112,11 @@ export async function apiRequest<T>(
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new ApiError(payload.message ?? "Request failed", response.status);
+    const message =
+      response.status === 403
+        ? (payload.message ?? "You don't have permission to perform this action")
+        : (payload.message ?? "Request failed");
+    throw new ApiError(message, response.status);
   }
 
   return payload as T;

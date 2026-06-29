@@ -15,7 +15,13 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 type HourlyDatum = { hourLabel: string; rounds: number };
 
 const productionChartConfig = {
-  rounds: { label: "Rounds", color: "#60a5fa" },
+  rounds: {
+    label: "Rounds",
+    theme: {
+      light: "var(--chart-2)",
+      dark: "var(--chart-2)",
+    },
+  },
 } satisfies ChartConfig;
 
 const chartContainerClassName = "aspect-auto h-full w-full min-h-0 min-w-0";
@@ -48,11 +54,15 @@ export function ProductionChart({
               initialDimension={chartInitialDimension}
             >
               <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="var(--border)"
+                />
                 <XAxis dataKey="hourLabel" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                 <Tooltip />
-                <Bar dataKey="rounds" fill="#60a5fa" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="rounds" fill="var(--chart-2)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ChartContainer>
           </div>

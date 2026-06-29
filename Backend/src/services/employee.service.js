@@ -1,16 +1,36 @@
 import Employee from "../models/employee/employee.model.js";
 import { AppError } from "../utils/AppError.js";
+import { pickFields } from "../utils/pickFields.js";
+import { buildTextSearchFilter, paginate } from "../utils/listQuery.js";
 import { assertCanManageEmployee } from "./rbac.service.js";
 import {
   refreshEmployeeInCache,
   removeEmployeeFromCache,
 } from "./workforce/employeeCache.service.js";
 
+const EMPLOYEE_CREATE_FIELDS = [
+  "employeeName",
+  "phoneNumber",
+  "department",
+  "designation",
+  "rfid",
+  "shift",
+  "address",
+  "joinedDate",
+  "profilePicture",
+];
+
+const EMPLOYEE_UPDATE_FIELDS = [
+  ...EMPLOYEE_CREATE_FIELDS,
+  "isActive",
+];
+
 export async function createEmployee(actor, body) {
   assertCanManageEmployee(actor, "create");
 
+  const payload = pickFields(body, EMPLOYEE_CREATE_FIELDS);
   const employee = await Employee.create({
-    ...body,
+    ...payload,
     createdBy: actor._id,
   });
 
@@ -22,14 +42,14 @@ export async function createEmployee(actor, body) {
 export async function listEmployees(actor, query) {
   assertCanManageEmployee(actor, "read");
 
-  const filter = {};
-  if (query.department) filter.department = query.department;
-  if (query.shift) filter.shift = query.shift;
-  if (query.isActive !== undefined) filter.isActive = query.isActive;
+  const filter = {
+    ...(query.department && { department: query.department }),
+    ...(query.shift && { shift: query.shift }),
+    ...(query.isActive !== undefined && { isActive: query.isActive }),
+    ...buildTextSearchFilter(query.search, ["employeeName", "employeeId", "rfid"]),
+  };
 
-  const page = query.page ?? 1;
-  const limit = query.limit ?? 20;
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = paginate(query);
 
   const [data, total] = await Promise.all([
     Employee.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }),
@@ -60,8 +80,9 @@ export async function updateEmployee(actor, id, updates) {
     throw new AppError("Employee not found", 404);
   }
 
+  const payload = pickFields(updates, EMPLOYEE_UPDATE_FIELDS);
   const previousRfid = employee.rfid;
-  Object.assign(employee, updates);
+  Object.assign(employee, payload);
   await employee.save();
 
   const result = employee.toObject();

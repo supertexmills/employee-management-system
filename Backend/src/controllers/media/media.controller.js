@@ -1,28 +1,19 @@
-import Admin from "../../models/admin/admin.model.js";
-import { openAvatarStream } from "../../services/media/avatar.service.js";
-import { AppError } from "../../utils/AppError.js";
+import { resolveAvatarStream } from "../../services/media/avatarAccess.service.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
-export const streamAvatar = async (req, res, next) => {
-  try {
-    const user = await Admin.findById(req.validatedParams.userId);
-    if (!user?.profilePictureId) {
-      throw new AppError("Avatar not found", 404);
-    }
+export const streamAvatar = asyncHandler(async (req, res, next) => {
+  const { stream, contentType, length, uploadDate } = await resolveAvatarStream(
+    req.user,
+    req.validatedParams.userId,
+  );
 
-    const { stream, contentType, length, uploadDate } = await openAvatarStream(
-      user.profilePictureId,
-    );
+  res.set({
+    "Content-Type": contentType,
+    "Content-Length": length,
+    "Cache-Control": "private, max-age=86400",
+    ETag: `"${uploadDate?.getTime?.() ?? 0}"`,
+  });
 
-    res.set({
-      "Content-Type": contentType,
-      "Content-Length": length,
-      "Cache-Control": "private, max-age=86400",
-      ETag: `"${user.profilePictureId}-${uploadDate?.getTime?.() ?? 0}"`,
-    });
-
-    stream.on("error", (err) => next(err));
-    stream.pipe(res);
-  } catch (err) {
-    next(err);
-  }
-};
+  stream.on("error", (err) => next(err));
+  stream.pipe(res);
+});

@@ -26,7 +26,8 @@ export const updateAdminSchema = z
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field is required",
-  });
+  })
+  .strict();
 
 export const adminIdParamSchema = z.object({
   id: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid admin id"),
