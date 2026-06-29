@@ -10,17 +10,11 @@ const app = createApp();
 let httpServer = null;
 
 async function start() {
-  const boot = await bootstrap();
+  await bootstrap();
 
   httpServer = app.listen(env.port, () => {
-    logger.info(
-      {
-        boot,
-        url: `http://127.0.0.1:${env.port}`,
-        health: `http://127.0.0.1:${env.port}/api/health`,
-      },
-      "Server ready",
-    );
+    logger.info(`Server running on http://localhost:${env.port}`);
+    logger.info(`Health check at http://localhost:${env.port}/api/health`);
   });
 
   httpServer.on("error", (err) => {

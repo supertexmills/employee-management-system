@@ -12,7 +12,7 @@ export async function connectDB({ exitOnFailure = true } = {}) {
   try {
     await mongoose.connect(env.mongodbUri);
 
-    logger.debug("MongoDB connected");
+    logger.info("MongoDB connected successfully");
   } catch (error) {
     logger.error({ err: error.message }, "MongoDB connection failed");
 

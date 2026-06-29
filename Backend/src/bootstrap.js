@@ -9,6 +9,12 @@ import { startRfidReader } from "./services/rfid/rfidReader.service.js";
 import { verifyEmailProvider } from "./email/email.service.js";
 import { startEmailWorker } from "./jobs/email.queue.js";
 
+function logBootSummary({ employeeTags, readers, machines, email, redis, rfid }) {
+  logger.info(`Employee cache ready (${employeeTags} tags)`);
+  logger.info(`Production cache ready (${readers} reader${readers === 1 ? "" : "s"}, ${machines} machine${machines === 1 ? "" : "s"})`);
+  logger.info(`Email ${email} | Redis ${redis} | RFID ${rfid}`);
+}
+
 export async function bootstrap() {
   await connectDB();
   await seedShiftSchedulesIfEmpty();
@@ -37,7 +43,7 @@ export async function bootstrap() {
     startRfidReader();
   }
 
-  return {
+  const boot = {
     db: "ok",
     employeeTags,
     readers,
@@ -47,4 +53,10 @@ export async function bootstrap() {
     rfid: env.rfidEnabled ? "on" : "off",
     otpEphemeral: env.otpPepperEphemeral,
   };
+
+  if (!env.isTest) {
+    logBootSummary(boot);
+  }
+
+  return boot;
 }

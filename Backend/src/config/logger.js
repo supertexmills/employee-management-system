@@ -9,7 +9,8 @@ const devTransport =
           colorize: true,
           translateTime: "HH:MM:ss",
           ignore: "pid,hostname",
-          singleLine: true,
+          singleLine: false,
+          messageFormat: "{msg}",
         },
       }
     : undefined;

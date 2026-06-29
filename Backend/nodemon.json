@@ -1,0 +1,5 @@
+{
+  "quiet": true,
+  "watch": ["src", "server.js"],
+  "ext": "js,json"
+}
