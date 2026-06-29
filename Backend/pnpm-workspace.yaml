@@ -1,6 +1,3 @@
-packages:
-  - .
-
 allowBuilds:
-  mongodb-memory-server: true
-  msgpackr-extract: true
+  mongodb-memory-server: false
+  msgpackr-extract: false
