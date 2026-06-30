@@ -12,8 +12,7 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "seed:superadmin": "node scripts/seedSuperAdmin.js",
-    "seed:employees": "node scripts/seedEmployees.js",
-    "test:rfid": "node test-rfid.js"
+    "seed:employees": "node scripts/seedEmployees.js"
   },
   "keywords": [],
   "author": "",
