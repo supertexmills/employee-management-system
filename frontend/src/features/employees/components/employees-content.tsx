@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Plus, Search } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, FilterBar, PageHeader } from "@/components/dashboard/page-header";
+import { FilterBar, PageHeader } from "@/components/dashboard/page-header";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { DataTable } from "@/components/data-table/data-table";
 import { EmployeeFormDialog } from "@/components/forms/employee-form-dialog";
-import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,14 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import * as employeesApi from "@/lib/api/employees";
 import { DEPARTMENTS, SHIFTS } from "@/lib/constants";
 import { queryKeys } from "@/lib/query-keys";
@@ -41,13 +34,19 @@ export function EmployeesContent() {
   const [page, setPage] = useState(1);
   const [department, setDepartment] = useState("all");
   const [shift, setShift] = useState("all");
-  const [search, setSearch] = useState(searchParams.get("search") ?? "");
+  const [inputValue, setInputValue] = useState(searchParams.get("search") ?? "");
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  const search = useDebounce(inputValue, 300);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   const canCreate = canManageEmployees(user, "create");
 
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.employees(page, search, department),
+    queryKey: queryKeys.employees(page, search, department, shift),
     queryFn: () =>
       employeesApi.listEmployees({
         page,
@@ -90,11 +89,8 @@ export function EmployeesContent() {
           <Input
             placeholder="Search by name or ID..."
             className="pl-10"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
           />
         </div>
         <Select value={department} onValueChange={(v) => v && setDepartment(v)}>
@@ -126,92 +122,78 @@ export function EmployeesContent() {
       </FilterBar>
 
       <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-        {isLoading ? (
-          <PageSkeleton variant="table" />
-        ) : employees.length === 0 ? (
-          <EmptyState
-            title="No employees found"
-            description="Add employees or adjust your search and filters."
-          />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Employee ID</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Shift</TableHead>
-                <TableHead>RFID</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.map((emp) => (
-                <TableRow
-                  key={emp._id}
-                  className="cursor-pointer"
-                  onClick={() => router.push(`/employees/${emp._id}`)}
+        <DataTable
+          caption="Employees list"
+          columns={[
+            {
+              key: "name",
+              header: "Name",
+              cell: (emp) => <span className="font-medium">{emp.employeeName}</span>,
+            },
+            {
+              key: "employeeId",
+              header: "Employee ID",
+              className: "font-mono text-xs",
+              cell: (emp) => emp.employeeId,
+            },
+            {
+              key: "department",
+              header: "Department",
+              cell: (emp) => emp.department,
+            },
+            {
+              key: "shift",
+              header: "Shift",
+              className: "capitalize",
+              cell: (emp) => emp.shift,
+            },
+            {
+              key: "rfid",
+              header: "RFID",
+              className: "font-mono text-xs",
+              cell: (emp) => emp.rfid,
+            },
+            {
+              key: "status",
+              header: "Status",
+              cell: (emp) => (
+                <StatusBadge status={emp.isActive ? "active" : "inactive"} />
+              ),
+            },
+            {
+              key: "actions",
+              header: "Actions",
+              headerClassName: "text-right",
+              className: "text-right",
+              cell: (emp) => (
+                <div
+                  className="flex justify-end gap-2"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <TableCell className="font-medium">{emp.employeeName}</TableCell>
-                  <TableCell className="font-mono text-xs">{emp.employeeId}</TableCell>
-                  <TableCell>{emp.department}</TableCell>
-                  <TableCell className="capitalize">{emp.shift}</TableCell>
-                  <TableCell className="font-mono text-xs">{emp.rfid}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={emp.isActive ? "active" : "inactive"} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push(`/employees/${emp._id}`)}
-                      >
-                        View
-                      </Button>
-                      {canManageEmployees(user, "delete") && emp.isActive && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive"
-                          onClick={() => deleteMutation.mutate(emp._id)}
-                        >
-                          Deactivate
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+                  {canManageEmployees(user, "delete") && emp.isActive && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      onClick={() => deleteMutation.mutate(emp._id)}
+                    >
+                      Deactivate
+                    </Button>
+                  )}
+                </div>
+              ),
+            },
+          ]}
+          data={employees}
+          rowKey={(emp) => emp._id}
+          isLoading={isLoading}
+          emptyTitle="No employees found"
+          emptyDescription="Add employees or adjust your search and filters."
+          pagination={data?.pagination}
+          onPageChange={setPage}
+          onRowClick={(emp) => router.push(`/employees/${emp._id}`)}
+        />
       </div>
-
-      {data?.pagination && data.pagination.pages > 1 && (
-        <div className="flex justify-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            Previous
-          </Button>
-          <span className="flex items-center text-sm text-muted-foreground">
-            Page {page} of {data.pagination.pages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= data.pagination.pages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      )}
 
       <EmployeeFormDialog
         open={dialogOpen}

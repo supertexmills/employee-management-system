@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface KpiCardProps {
@@ -19,12 +18,13 @@ export function KpiCard({
   icon,
 }: KpiCardProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
+    <div
       className={cn(
-        "relative overflow-hidden rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md",
+        "relative overflow-hidden rounded-xl border p-5 shadow-sm",
+        "animate-in fade-in-0 slide-in-from-bottom-3 duration-300 ease-out",
+        "hover:-translate-y-0.5 hover:shadow-md",
+        "transition-[transform,box-shadow] duration-150",
+        "motion-reduce:animate-none motion-reduce:transition-none motion-reduce:hover:translate-y-0",
         highlighted
           ? "border-primary bg-primary text-primary-foreground"
           : "border-border bg-card text-card-foreground"
@@ -63,7 +63,7 @@ export function KpiCard({
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
 

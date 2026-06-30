@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -32,7 +33,13 @@ import { queryKeys } from "@/lib/query-keys";
 
 export function AdminsContent() {
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
+  const [inputValue, setInputValue] = useState("");
+
+  const search = useDebounce(inputValue, 300);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
   const [open, setOpen] = useState(false);
   const [deactivateId, setDeactivateId] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -93,11 +100,8 @@ export function AdminsContent() {
         <Input
           placeholder="Search admins..."
           className="pl-10"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
         />
       </div>
 

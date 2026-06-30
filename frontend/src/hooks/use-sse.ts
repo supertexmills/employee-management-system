@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getApiBaseUrl } from "@/lib/api/client";
 
 type SseHandler = (event: string, data: unknown) => void;
@@ -112,10 +112,14 @@ export function useProductionStream(
   params?: { department?: string; shift?: string; machineId?: string },
   enabled = true
 ) {
-  const query = new URLSearchParams();
-  if (params?.department) query.set("department", params.department);
-  if (params?.shift) query.set("shift", params.shift);
-  if (params?.machineId) query.set("machineId", params.machineId);
-  const qs = query.toString();
-  return useSse(`/v1/production/stream${qs ? `?${qs}` : ""}`, onEvent, enabled);
+  const path = useMemo(() => {
+    const query = new URLSearchParams();
+    if (params?.department) query.set("department", params.department);
+    if (params?.shift) query.set("shift", params.shift);
+    if (params?.machineId) query.set("machineId", params.machineId);
+    const qs = query.toString();
+    return `/v1/production/stream${qs ? `?${qs}` : ""}`;
+  }, [params?.department, params?.shift, params?.machineId]);
+
+  return useSse(path, onEvent, enabled);
 }

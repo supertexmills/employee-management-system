@@ -1,8 +1,8 @@
 export const queryKeys = {
   admins: (page?: number, search?: string) =>
     ["admins", page ?? 1, search ?? ""] as const,
-  employees: (page?: number, search?: string, department?: string) =>
-    ["employees", page ?? 1, search ?? "", department ?? ""] as const,
+  employees: (page?: number, search?: string, department?: string, shift?: string) =>
+    ["employees", page ?? 1, search ?? "", department ?? "", shift ?? ""] as const,
   employee: (id: string) => ["employee", id] as const,
   health: () => ["health"] as const,
   productionLive: (filters?: Record<string, string>) =>

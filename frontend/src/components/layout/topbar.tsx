@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LogOut, Search, User } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -18,29 +19,62 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/providers/auth-provider";
 import * as authApi from "@/lib/api/auth";
 
+function TopbarSearch() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const initialValue = pathname === "/employees" ? (searchParams.get("search") ?? "") : "";
+  const [value, setValue] = useState(initialValue);
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      const q = value.trim();
+      if (q) router.push(`/employees?search=${encodeURIComponent(q)}`);
+    }
+  }
+
+  return (
+    <div className="relative hidden max-w-md flex-1 md:block">
+      <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        aria-label="Search employees"
+        placeholder="Search employees..."
+        className="h-10 rounded-full border-border bg-muted/50 pl-10"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+      />
+    </div>
+  );
+}
+
 export function Topbar() {
   const { user, logout } = useAuth();
   const router = useRouter();
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-border/80 bg-background/80 px-4 backdrop-blur-md lg:px-6">
       <SidebarTrigger />
-      <div className="relative hidden max-w-md flex-1 md:block">
-        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search employees..."
-          className="h-10 rounded-full border-border bg-muted/50 pl-10"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              const q = (e.target as HTMLInputElement).value.trim();
-              if (q) router.push(`/employees?search=${encodeURIComponent(q)}`);
-            }
-          }}
-        />
-      </div>
+      <Suspense fallback={
+        <div className="relative hidden max-w-md flex-1 md:block">
+          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            aria-label="Search employees"
+            placeholder="Search employees..."
+            className="h-10 rounded-full border-border bg-muted/50 pl-10"
+            disabled
+          />
+        </div>
+      }>
+        <TopbarSearch />
+      </Suspense>
       <div className="ml-auto flex items-center gap-2">
         <ThemeToggle />
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex h-10 items-center gap-2 rounded-full px-2 outline-none hover:bg-muted">
+          <DropdownMenuTrigger
+            aria-label={`Account menu for ${user?.username ?? "user"}`}
+            className="flex h-10 items-center gap-2 rounded-full px-2 outline-none hover:bg-muted"
+          >
             <Avatar className="size-8">
               {user?.id && (
                 <AvatarImage src={authApi.avatarUrl(user.id)} alt={user.username} />

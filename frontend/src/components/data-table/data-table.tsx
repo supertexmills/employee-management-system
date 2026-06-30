@@ -22,6 +22,9 @@ import type { Pagination as PaginationMeta } from "@/lib/api/types";
 export type DataTableColumn<T> = {
   key: string;
   header: string;
+  /** Applied to the <TableHead> element only */
+  headerClassName?: string;
+  /** Applied to every <TableCell> in this column */
   className?: string;
   cell: (row: T) => React.ReactNode;
 };
@@ -35,6 +38,10 @@ type DataTableProps<T> = {
   emptyDescription?: string;
   pagination?: PaginationMeta;
   onPageChange?: (page: number) => void;
+  /** Navigate or act on a row click. Adds cursor-pointer + keyboard activation. */
+  onRowClick?: (row: T) => void;
+  /** Accessible <caption> announced by screen readers */
+  caption?: string;
 };
 
 export function DataTable<T>({
@@ -46,6 +53,8 @@ export function DataTable<T>({
   emptyDescription,
   pagination,
   onPageChange,
+  onRowClick,
+  caption,
 }: DataTableProps<T>) {
   if (isLoading) {
     return <PageSkeleton variant="table" className="p-4" />;
@@ -58,10 +67,16 @@ export function DataTable<T>({
   return (
     <div className="space-y-4">
       <Table>
+        {caption && (
+          <caption className="sr-only">{caption}</caption>
+        )}
         <TableHeader>
           <TableRow>
             {columns.map((col) => (
-              <TableHead key={col.key} className={col.className}>
+              <TableHead
+                key={col.key}
+                className={col.headerClassName ?? col.className}
+              >
                 {col.header}
               </TableHead>
             ))}
@@ -69,7 +84,23 @@ export function DataTable<T>({
         </TableHeader>
         <TableBody>
           {data.map((row) => (
-            <TableRow key={rowKey(row)}>
+            <TableRow
+              key={rowKey(row)}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+              onKeyDown={
+                onRowClick
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onRowClick(row);
+                      }
+                    }
+                  : undefined
+              }
+              tabIndex={onRowClick ? 0 : undefined}
+              role={onRowClick ? "button" : undefined}
+              className={onRowClick ? "cursor-pointer" : undefined}
+            >
               {columns.map((col) => (
                 <TableCell key={col.key} className={col.className}>
                   {col.cell(row)}

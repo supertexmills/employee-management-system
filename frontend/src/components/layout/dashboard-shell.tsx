@@ -31,7 +31,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <AppSidebar />
       <SidebarInset className="bg-background">
         <Topbar />
-        <main className="flex-1 space-y-6 p-4 lg:p-6">{children}</main>
+        <main id="main-content" className="flex-1 space-y-6 p-4 lg:p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

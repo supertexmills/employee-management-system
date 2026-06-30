@@ -217,8 +217,8 @@ export default function DashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(prod?.topPerformers ?? []).slice(0, 5).map((p, i) => (
-                    <TableRow key={`${p.employeeName}-${i}`}>
+                  {(prod?.topPerformers ?? []).slice(0, 5).map((p) => (
+                    <TableRow key={`${p.employeeName}-${p.machineId}`}>
                       <TableCell className="font-medium">{p.employeeName}</TableCell>
                       <TableCell>{p.machineId}</TableCell>
                       <TableCell className="text-right">{p.totalRounds}</TableCell>
@@ -287,6 +287,8 @@ function HealthRow({
         <p className="text-xs text-muted-foreground">{detail}</p>
       </div>
       <span
+        role="img"
+        aria-label={ok ? "Status: healthy" : "Status: error"}
         className={`size-2.5 rounded-full ${ok ? "bg-success" : "bg-destructive"}`}
       />
     </div>

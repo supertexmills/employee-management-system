@@ -103,39 +103,44 @@ export function EmployeeFormDialog({
     }
   }
 
+  function handleOpenChange(next: boolean) {
+    if (!next) form.reset();
+    onOpenChange(next);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Employee" : "Add Employee"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label>Full Name</Label>
-            <Input {...form.register("employeeName")} />
+            <Label htmlFor="emp-name">Full Name</Label>
+            <Input id="emp-name" {...form.register("employeeName")} />
           </div>
           <div className="space-y-2">
-            <Label>Phone (10 digits)</Label>
-            <Input {...form.register("phoneNumber")} />
+            <Label htmlFor="emp-phone">Phone (10 digits)</Label>
+            <Input id="emp-phone" {...form.register("phoneNumber")} />
           </div>
           <div className="space-y-2">
-            <Label>Designation</Label>
-            <Input {...form.register("designation")} />
+            <Label htmlFor="emp-designation">Designation</Label>
+            <Input id="emp-designation" {...form.register("designation")} />
           </div>
           <div className="space-y-2">
-            <Label>RFID Tag</Label>
-            <Input {...form.register("rfid")} className="font-mono" />
+            <Label htmlFor="emp-rfid">RFID Tag</Label>
+            <Input id="emp-rfid" {...form.register("rfid")} className="font-mono" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Department</Label>
+              <Label htmlFor="emp-department">Department</Label>
               <Select
                 value={form.watch("department")}
                 onValueChange={(v) =>
                   v && form.setValue("department", v as FormData["department"])
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger id="emp-department">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -148,12 +153,12 @@ export function EmployeeFormDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Shift</Label>
+              <Label htmlFor="emp-shift">Shift</Label>
               <Select
                 value={form.watch("shift")}
                 onValueChange={(v) => v && form.setValue("shift", v as FormData["shift"])}
               >
-                <SelectTrigger>
+                <SelectTrigger id="emp-shift">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
