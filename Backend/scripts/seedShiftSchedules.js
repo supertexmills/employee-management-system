@@ -3,9 +3,9 @@ import ShiftSchedule from "../src/models/rfid/shiftSchedule.model.js";
 import { env } from "../src/config/env.js";
 
 const DEFAULT_SHIFTS = [
-  { shift: "morning", startTime: "06:00", endTime: "14:00" },
-  { shift: "evening", startTime: "14:00", endTime: "22:00" },
-  { shift: "night", startTime: "22:00", endTime: "06:00" },
+  { shift: "morning", startTime: "6:00 AM", endTime: "2:00 PM" },
+  { shift: "evening", startTime: "2:00 PM", endTime: "10:00 PM" },
+  { shift: "night", startTime: "10:00 PM", endTime: "6:00 AM" },
 ];
 
 export async function seedShiftSchedulesIfEmpty() {

@@ -11,12 +11,12 @@ const shiftScheduleSchema = new mongoose.Schema(
     startTime: {
       type: String,
       required: true,
-      match: /^([01]\d|2[0-3]):[0-5]\d$/,
+      match: /^(1[0-2]|[1-9]):[0-5]\d (AM|PM)$/,
     },
     endTime: {
       type: String,
       required: true,
-      match: /^([01]\d|2[0-3]):[0-5]\d$/,
+      match: /^(1[0-2]|[1-9]):[0-5]\d (AM|PM)$/,
     },
     timezone: {
       type: String,
