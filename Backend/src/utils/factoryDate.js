@@ -1,7 +1,7 @@
-import { env } from "../config/env.js";
+import { getSettings } from "../services/admin/factorySettings.service.js";
 
 function getTimeZone() {
-  return env.factoryTimezone;
+  return getSettings().factoryTimezone;
 }
 
 export function getFactoryDate(date = new Date()) {

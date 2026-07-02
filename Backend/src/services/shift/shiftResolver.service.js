@@ -1,6 +1,6 @@
 import ShiftSchedule from "../../models/rfid/shiftSchedule.model.js";
 import { getFactoryDate, getShiftBounds } from "../../utils/factoryDate.js";
-import { env } from "../../config/env.js";
+import { getSettings } from "../admin/factorySettings.service.js";
 import { SHIFTS } from "../../constant/factory.js";
 
 const shiftCache = new Map();
@@ -103,5 +103,5 @@ export function resolveShiftForTimestamp(detectedAt) {
 }
 
 export function shouldCountOutsideShift() {
-  return env.countOutsideShift;
+  return getSettings().countOutsideShift;
 }

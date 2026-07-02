@@ -1,5 +1,5 @@
 import Reader from "../../models/production/reader.model.js";
-import { env } from "../../config/env.js";
+import { getSettings } from "../admin/factorySettings.service.js";
 import { createBinaryTcpDriver } from "./drivers/binaryTcp.driver.js";
 import { enqueueTagEvent, drainRoundQueue } from "../production/roundIngest.service.js";
 
@@ -8,22 +8,12 @@ const drivers = new Map();
 
 let primaryReaderId = null;
 
-function buildEnvFallbackConfig() {
-  return {
-    readerId: env.rfidReaderId,
-    ip: env.rfidReaderIp,
-    port: env.rfidReaderPort,
-    location: env.rfidLocation,
-    pollIntervalMs: env.rfidReaderPollMs,
-    protocol: "BINARY_TCP",
-  };
-}
-
 async function loadReaderConfigs() {
   const readers = await Reader.find({ isActive: true }).lean();
 
   if (readers.length === 0) {
-    return [buildEnvFallbackConfig()];
+    console.warn("RFID enabled but no active readers found in DB — add a reader via the admin dashboard");
+    return [];
   }
 
   return readers
@@ -33,7 +23,7 @@ async function loadReaderConfigs() {
       ip: r.ip,
       port: r.port,
       location: r.location,
-      pollIntervalMs: r.pollIntervalMs ?? env.rfidReaderPollMs,
+      pollIntervalMs: r.pollIntervalMs ?? 500,
       protocol: r.protocol ?? "BINARY_TCP",
     }));
 }
@@ -48,8 +38,10 @@ function onTagReceived(tagEvent) {
 }
 
 export async function start() {
-  if (!env.rfidEnabled) {
-    console.log("RFID reader disabled (RFID_ENABLED=false)");
+  const { rfidEnabled } = getSettings();
+
+  if (!rfidEnabled) {
+    console.log("RFID reader disabled (rfidEnabled=false in FactorySettings)");
     return;
   }
 
@@ -57,7 +49,6 @@ export async function start() {
 
   const configs = await loadReaderConfigs();
   if (configs.length === 0) {
-    console.warn("RFID enabled but no active BINARY_TCP readers configured");
     return;
   }
 
@@ -96,12 +87,13 @@ export function getAllStatus() {
 export function getPrimaryStatus() {
   const primary = primaryReaderId ? drivers.get(primaryReaderId) : null;
   const status = primary?.getStatus();
+  const { rfidEnabled } = getSettings();
 
   return {
-    enabled: env.rfidEnabled,
+    enabled: rfidEnabled,
     connected: status?.connected ?? false,
-    readerId: status?.readerId ?? env.rfidReaderId,
-    location: status?.location ?? env.rfidLocation,
+    readerId: status?.readerId ?? null,
+    location: status?.location ?? null,
     lastSeenAt: status?.lastSeenAt ?? null,
     tagsReceived: status?.tagsReceived ?? 0,
     parseErrors: status?.parseErrors ?? 0,

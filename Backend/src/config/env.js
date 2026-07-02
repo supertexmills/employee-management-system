@@ -51,12 +51,9 @@ export const env = {
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
   isProduction: nodeEnv === "production",
   isTest: nodeEnv === "test",
+  // Legacy one-time migration seeds — used only on first boot to populate FactorySettings in DB.
+  // Once the DB document exists these are ignored and can be removed from .env safely.
   rfidEnabled: process.env.RFID_ENABLED === "true",
-  rfidReaderIp: process.env.RFID_READER_IP || "192.168.1.200",
-  rfidReaderPort: Number(process.env.RFID_READER_PORT) || 200,
-  rfidReaderId: process.env.RFID_READER_ID || "GATE_1",
-  rfidLocation: process.env.RFID_LOCATION || "Main Gate",
-  rfidReaderPollMs: Number(process.env.RFID_READER_POLL_MS) || 500,
   factoryTimezone: process.env.FACTORY_TIMEZONE || "Asia/Kolkata",
   defaultMinRoundIntervalSeconds: Number(process.env.DEFAULT_MIN_ROUND_INTERVAL_SECONDS) || 1,
   countOutsideShift: process.env.COUNT_OUTSIDE_SHIFT === "true",

@@ -3,7 +3,7 @@ import Reader from "../../models/production/reader.model.js";
 import { AppError } from "../../utils/AppError.js";
 import { assertCanReadProduction, assertCanManageProduction } from "../rbac.service.js";
 import { refreshMachineInCache } from "./roundCounter.service.js";
-import { env } from "../../config/env.js";
+import { getSettings } from "../admin/factorySettings.service.js";
 
 export async function listMachines(actor, query) {
   assertCanReadProduction(actor);
@@ -52,7 +52,7 @@ export async function createMachine(actor, body) {
     reader: reader._id,
     location: body.location,
     minRoundIntervalSeconds:
-      body.minRoundIntervalSeconds ?? env.defaultMinRoundIntervalSeconds,
+      body.minRoundIntervalSeconds ?? getSettings().defaultMinRoundIntervalSeconds,
     targetRoundsPerShift: body.targetRoundsPerShift ?? null,
     createdBy: actor._id,
   });

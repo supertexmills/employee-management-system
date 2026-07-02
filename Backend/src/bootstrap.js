@@ -1,6 +1,7 @@
 import { connectDB } from "./config/mongoDB.js";
 import { env } from "./config/env.js";
 import { logger } from "./config/logger.js";
+import { initSettings, getSettings } from "./services/admin/factorySettings.service.js";
 import { seedShiftSchedulesIfEmpty } from "../scripts/seedShiftSchedules.js";
 import { seedProductionIfEmpty } from "../scripts/seedProduction.js";
 import { hydrateEmployeeCache } from "./services/workforce/employeeCache.service.js";
@@ -17,6 +18,14 @@ function logBootSummary({ employeeTags, readers, machines, email, redis, rfid })
 
 export async function bootstrap() {
   await connectDB();
+
+  await initSettings({
+    rfidEnabled: env.rfidEnabled ?? false,
+    factoryTimezone: env.factoryTimezone ?? "Asia/Kolkata",
+    defaultMinRoundIntervalSeconds: env.defaultMinRoundIntervalSeconds ?? 1,
+    countOutsideShift: env.countOutsideShift ?? false,
+  });
+
   await seedShiftSchedulesIfEmpty();
   await seedProductionIfEmpty();
 
@@ -39,7 +48,9 @@ export async function bootstrap() {
     }
   }
 
-  if (env.rfidEnabled) {
+  const settings = getSettings();
+
+  if (settings.rfidEnabled) {
     startRfidReader();
   }
 
@@ -50,7 +61,7 @@ export async function bootstrap() {
     machines,
     redis: env.redisUrl ? "on" : "off",
     email,
-    rfid: env.rfidEnabled ? "on" : "off",
+    rfid: settings.rfidEnabled ? "on" : "off",
     otpEphemeral: env.otpPepperEphemeral,
   };
 

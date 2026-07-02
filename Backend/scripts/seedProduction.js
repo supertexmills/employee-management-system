@@ -1,7 +1,7 @@
 import Admin from "../src/models/admin/admin.model.js";
 import Reader from "../src/models/production/reader.model.js";
 import Machine from "../src/models/production/machine.model.js";
-import { env } from "../src/config/env.js";
+import { initSettings, getSettings } from "../src/services/admin/factorySettings.service.js";
 import { ROLES } from "../src/constant/roles.js";
 import { connectDB } from "../src/config/mongoDB.js";
 
@@ -10,10 +10,6 @@ const DEFAULT_MACHINE_ID = "MILL_01";
 export async function seedProductionIfEmpty() {
   const readerCount = await Reader.countDocuments();
   if (readerCount > 0) {
-    await Machine.updateMany(
-      { minRoundIntervalSeconds: 120 },
-      { $set: { minRoundIntervalSeconds: env.defaultMinRoundIntervalSeconds } }
-    );
     return;
   }
 
@@ -27,14 +23,16 @@ export async function seedProductionIfEmpty() {
     return;
   }
 
+  const settings = getSettings();
+
   const reader = await Reader.create({
-    readerId: env.rfidReaderId,
+    readerId: "MILL_01_READER",
     type: "MACHINE",
     protocol: "BINARY_TCP",
-    ip: env.rfidReaderIp,
-    port: env.rfidReaderPort,
-    location: env.rfidLocation,
-    pollIntervalMs: env.rfidReaderPollMs,
+    ip: "192.168.1.200",
+    port: 200,
+    location: "Spinning Mill 1",
+    pollIntervalMs: 500,
     createdBy: admin._id,
   });
 
@@ -44,8 +42,8 @@ export async function seedProductionIfEmpty() {
     department: "Production",
     defaultShift: "morning",
     reader: reader._id,
-    location: env.rfidLocation,
-    minRoundIntervalSeconds: env.defaultMinRoundIntervalSeconds,
+    location: "Spinning Mill 1",
+    minRoundIntervalSeconds: settings.defaultMinRoundIntervalSeconds,
     createdBy: admin._id,
   });
 
@@ -56,6 +54,7 @@ export async function seedProductionIfEmpty() {
 
 async function main() {
   await connectDB();
+  await initSettings();
   await Reader.deleteMany({});
   await Machine.deleteMany({});
   await seedProductionIfEmpty();

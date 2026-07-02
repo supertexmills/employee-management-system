@@ -3,7 +3,7 @@ import Reader from "../../models/production/reader.model.js";
 import Machine from "../../models/production/machine.model.js";
 import MachineRound from "../../models/production/machineRound.model.js";
 import MachineShiftSummary from "../../models/production/machineShiftSummary.model.js";
-import { env } from "../../config/env.js";
+import { getSettings } from "../admin/factorySettings.service.js";
 import {
   resolveRoundContext,
   shouldCountOutsideShift,
@@ -200,7 +200,7 @@ export async function processRead({
   }
 
   const intervalSeconds =
-    machine.minRoundIntervalSeconds ?? env.defaultMinRoundIntervalSeconds;
+    machine.minRoundIntervalSeconds ?? getSettings().defaultMinRoundIntervalSeconds;
 
   const employee = await lookupEmployee(normalizedEpc);
   if (!employee) {
